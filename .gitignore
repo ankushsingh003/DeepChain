@@ -1,0 +1,20 @@
+# Virtual Environment
+venv/
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Databases & Data
+data/neo4j/
+data/mlflow/
+data/processed/
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

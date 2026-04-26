@@ -7,71 +7,98 @@ import json
 from typing import List
 from ingestion.loader import DocumentLoader
 from ingestion.chunker import DocumentChunker
-from ingestion.extractor import GraphExtractor, KnowledgeGraph
+from graph.extractor import TripletExtractor
+from graph.neo4j_client import Neo4jClient
+from graph.builder import GraphBuilder
+from vector_store.weaviate_client import WeaviateClient
+from vector_store.embedder import GeminiEmbedder
 
 class IngestionPipeline:
     def __init__(self, data_path: str = "data/sample_docs"):
         self.loader = DocumentLoader(data_path)
         self.chunker = DocumentChunker()
-        self.extractor = GraphExtractor()
+        self.extractor = TripletExtractor()
+        self.neo4j_client = Neo4jClient()
+        self.weaviate_client = WeaviateClient()
+        self.embedder = GeminiEmbedder()
 
-    def run(self) -> KnowledgeGraph:
-        """Runs the full ingestion pipeline: Load -> Chunk -> Extract Knowledge."""
+    def run(self):
+        """Runs the full ingestion pipeline: Load -> Chunk -> Extract -> Store."""
         print("\n[PIPELINE] Starting Information Extraction Pipeline...")
         
         # 1. Load
         documents = self.loader.load_documents()
         if not documents:
             print("[!] No documents found. Exiting.")
-            return KnowledgeGraph(entities=[], relationships=[])
+            return
 
         # 2. Chunk
         chunks = self.chunker.split_documents(documents)
+        chunks_data = [
+            {
+                "text": c.page_content,
+                "source": c.metadata.get("source", "unknown"),
+                "chunk_id": f"chunk_{i}",
+            }
+            for i, c in enumerate(chunks)
+        ]
         
-        # 3. Extract (Batching chunks into extraction)
-        master_kg = KnowledgeGraph(entities=[], relationships=[])
+        # 3. Extract Triplets (New Logic)
+        print(f"[*] Extracting triplets from {len(chunks_data)} chunks...")
+        triplets = self.extractor.extract(chunks_data)
         
-        # Note: In a production system, we would use async/parallel extraction here.
-        # For simplicity, we iterate through chunks.
-        for i, chunk in enumerate(chunks):
-            print(f"\n[PIPELINE] Processing Chunk {i+1}/{len(chunks)}...")
-            try:
-                chunk_kg = self.extractor.extract(chunk.page_content)
-                master_kg.entities.extend(chunk_kg.entities)
-                master_kg.relationships.extend(chunk_kg.relationships)
-            except Exception as e:
-                print(f"[!] Error processing chunk {i+1}: {e}")
-
-        # Deduplicate entities (Simple name-based)
-        seen_entities = set()
-        deduped_entities = []
-        for e in master_kg.entities:
-            if e.name.lower() not in seen_entities:
-                deduped_entities.append(e)
-                seen_entities.add(e.name.lower())
+        # 4. Store in Neo4j
+        print(f"[*] Building Knowledge Graph in Neo4j...")
+        self.neo4j_client.initialize_schema()
+        # We need to adapt triplets to the KnowledgeGraph schema if builder expects it
+        # Or update builder. For now, let's convert triplets to the expected format
+        from ingestion.extractor import KnowledgeGraph, Entity, Relationship
         
-        master_kg.entities = deduped_entities
+        entities_map = {}
+        relationships = []
+        for t in triplets:
+            subj = t["subject"]
+            obj = t["object"]
+            pred = t["predicate"]
+            
+            if subj not in entities_map:
+                entities_map[subj] = Entity(name=subj, type="Entity", description="Extracted entity")
+            if obj not in entities_map:
+                entities_map[obj] = Entity(name=obj, type="Entity", description="Extracted entity")
+                
+            relationships.append(Relationship(
+                source=subj, 
+                target=obj, 
+                type=pred, 
+                description=f"Extracted from {t.get('source_chunk_id')}"
+            ))
+            
+        kg = KnowledgeGraph(entities=list(entities_map.values()), relationships=relationships)
+        builder = GraphBuilder(self.neo4j_client)
+        builder.build_graph(kg)
         
-        print(f"\n[PIPELINE] Completed.")
-        print(f"[+] Total Unique Entities: {len(master_kg.entities)}")
-        print(f"[+] Total Relationships: {len(master_kg.relationships)}")
+        # 5. Store in Weaviate
+        print(f"[*] Storing {len(chunks_data)} chunks in Weaviate...")
+        # Note: Weaviate expects 'content' instead of 'text' based on previous schema
+        # Let's align them
+        weaviate_data = []
+        texts = []
+        for c in chunks_data:
+            weaviate_data.append({
+                "content": c["text"],
+                "source": c["source"],
+                "chunk_id": int(c["chunk_id"].split("_")[1])
+            })
+            texts.append(c["text"])
+            
+        vectors = self.embedder.embed_documents(texts)
+        self.weaviate_client.upsert_chunks(weaviate_data, vectors)
         
-        return master_kg
+        print(f"\n[PIPELINE] Completed successfully.")
 
 if __name__ == "__main__":
     # Ensure sample data exists
     import os
     os.makedirs("data/sample_docs", exist_ok=True)
-    sample_path = "data/sample_docs/financial_news.txt"
-    if not os.path.exists(sample_path):
-        with open(sample_path, "w") as f:
-            f.write("Google Inc. announced a partnership with Anthropic AI. "
-                    "The deal is valued at $2 billion and aims to accelerate cloud computing.")
-
     pipeline = IngestionPipeline()
-    final_kg = pipeline.run()
-    
-    # Save processed KG for reference
-    os.makedirs("data/processed", exist_ok=True)
-    with open("data/processed/extracted_kg.json", "w") as f:
-        f.write(json.dumps([e.dict() for e in final_kg.entities], indent=2))
+    pipeline.run()

@@ -7,13 +7,10 @@ import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from ingestion.pipeline import IngestionPipeline
-from retrieval.naive_rag import NaiveRAG
-from retrieval.graph_rag import GraphRAG
-from vector_store.weaviate_client import WeaviateClient
-from vector_store.retriever import VectorRetriever
-from vector_store.embedder import GeminiEmbedder
+from retrieval.hybrid_retriever import HybridRetriever
 from graph.neo4j_client import Neo4jClient
-from graph.builder import GraphBuilder
+from vector_store.weaviate_client import WeaviateClient
+from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,66 +18,43 @@ load_dotenv()
 app = FastAPI(title="DeepChain Hybrid RAG API")
 
 # --- Dependency Initialization ---
-# In a real production app, we would use lifespan events or dependency injection
-neo4j_client = Neo4jClient()
-weaviate_client = WeaviateClient()
-embedder = GeminiEmbedder()
-vector_retriever = VectorRetriever(weaviate_client, embedder)
-
-naive_rag = NaiveRAG(vector_retriever)
-graph_rag = GraphRAG(vector_retriever, neo4j_client)
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
+hybrid_retriever = HybridRetriever(
+    neo4j_uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
+    neo4j_user=os.getenv("NEO4J_USERNAME", "neo4j"),
+    neo4j_password=os.getenv("NEO4J_PASSWORD", "password123"),
+    weaviate_host=os.getenv("WEAVIATE_HOST", "localhost"),
+    weaviate_port=int(os.getenv("WEAVIATE_PORT", 8080))
+)
 
 # --- Schemas ---
 
 class QueryRequest(BaseModel):
     question: str
-    method: str = "graph" # "naive" or "graph"
+    method: str = "hybrid" # "naive", "graph", or "hybrid"
     top_k: int = 5
 
 class QueryResponse(BaseModel):
     answer: str
     method: str
+    fallback_reason: str = ""
 
 # --- Routes ---
 
 @app.get("/health")
 def health_check():
-    return {"status": "online", "neo4j": "connected", "weaviate": "connected"}
+    status = hybrid_retriever.health_check()
+    return {"status": "online", "services": status}
 
 @app.post("/ingest")
 def start_ingestion():
     """Triggers the document ingestion pipeline."""
     try:
         pipeline = IngestionPipeline()
-
-        # 1. Extract knowledge graph (entities + relationships)
-        kg = pipeline.run()
-
-        # 2. Write entities and relationships to Neo4j
-        neo4j_client.initialize_schema()
-        graph_builder = GraphBuilder(neo4j_client)
-        graph_builder.build_graph(kg)
-
-        # 3. Load, chunk, embed and write to Weaviate
-        documents = pipeline.loader.load_documents()
-        chunks = pipeline.chunker.split_documents(documents)
-        chunks_data = [
-            {
-                "content": c.page_content,
-                "source": c.metadata.get("source", "unknown"),
-                "chunk_id": i,
-            }
-            for i, c in enumerate(chunks)
-        ]
-        vectors = embedder.embed_documents([c["content"] for c in chunks_data])
-        weaviate_client.upsert_chunks(chunks_data, vectors)
-
-        return {
-            "status": "success",
-            "entities_extracted": len(kg.entities),
-            "relationships_extracted": len(kg.relationships),
-            "chunks_stored": len(chunks_data),
-        }
+        # In a real app, this should be a background task
+        # Note: We are using the updated pipeline logic
+        pipeline.run()
+        return {"status": "success", "message": "Ingestion completed."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -88,12 +62,28 @@ def start_ingestion():
 def run_query(request: QueryRequest):
     """Executes a RAG query using the specified method."""
     try:
-        if request.method == "naive":
-            answer = naive_rag.query(request.question, top_k=request.top_k)
-        else:
-            answer = graph_rag.query(request.question, top_k=request.top_k)
-            
-        return QueryResponse(answer=answer, method=request.method)
+        # 1. Retrieve Context
+        result = hybrid_retriever.retrieve(request.question, mode=request.method)
+        
+        # 2. Generate Answer
+        contexts = [c["text"] for c in result.chunks]
+        context_str = "\n\n".join(contexts) if contexts else "No relevant context found."
+        
+        prompt = (
+            f"You are a sophisticated AI analyst. Answer the question using ONLY the context provided.\n"
+            f"If the context is insufficient, explain what is missing.\n\n"
+            f"Context:\n{context_str}\n\n"
+            f"Question: {request.question}\n\n"
+            f"Professional Answer:"
+        )
+        
+        response = llm.invoke(prompt)
+        
+        return QueryResponse(
+            answer=response.content.strip(),
+            method=result.mode_used,
+            fallback_reason=result.fallback_reason
+        )
     except Exception as e:
         print(f"[!] API Error: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error during retrieval.")

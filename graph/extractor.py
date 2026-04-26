@@ -1,0 +1,180 @@
+"""
+graph/extractor.py  —  DeepChain Hybrid-RAG
+Fixed: silent failure on Gemini API errors during triplet extraction.
+
+Changes vs original:
+  - Wrapped LLM call in retry loop with exponential backoff (3 attempts).
+  - Failed chunks are written to a skip-log (extraction_errors.jsonl) so
+    you can re-run them without re-processing the whole corpus.
+  - Malformed LLM output (JSON parse errors) is caught and logged, not raised.
+  - Added structured logging throughout so MLflow can pick up counts.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import time
+from pathlib import Path
+from typing import Any
+
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.schema import HumanMessage
+
+logger = logging.getLogger(__name__)
+
+# ── Retry config ──────────────────────────────────────────────────────────────
+MAX_RETRIES = 3
+BACKOFF_BASE = 2          # seconds; doubles each attempt: 2, 4, 8
+SKIP_LOG_PATH = Path("extraction_errors.jsonl")
+
+# ── Prompt ────────────────────────────────────────────────────────────────────
+TRIPLET_PROMPT = """Extract all factual relationships from the text below.
+Return ONLY a JSON array of objects, no prose, no markdown fences.
+Each object must have exactly three keys: "subject", "predicate", "object".
+If no relationships exist return an empty array [].
+
+Text:
+{text}
+"""
+
+
+class TripletExtractor:
+    def __init__(self, llm: ChatGoogleGenerativeAI | None = None) -> None:
+        self.llm = llm or ChatGoogleGenerativeAI(model="gemini-1.5-pro")
+
+    # ── Public API ────────────────────────────────────────────────────────────
+
+    def extract(self, chunks: list[dict[str, Any]]) -> list[dict[str, str]]:
+        """
+        Extract triplets from a list of chunk dicts.
+        Each chunk dict must have at least: {"text": str, "chunk_id": str}
+
+        Returns flat list of {subject, predicate, object, source_chunk_id}.
+        Failed chunks are skipped and logged — never raise mid-pipeline.
+        """
+        all_triplets: list[dict[str, str]] = []
+        failed = 0
+
+        for chunk in chunks:
+            triplets = self._extract_with_retry(chunk)
+            if triplets is None:
+                failed += 1
+                self._log_skip(chunk, reason="max_retries_exceeded")
+            else:
+                for t in triplets:
+                    t["source_chunk_id"] = chunk.get("chunk_id", "unknown")
+                all_triplets.extend(triplets)
+
+        logger.info(
+            "Triplet extraction complete — chunks=%d ok=%d failed=%d triplets=%d",
+            len(chunks),
+            len(chunks) - failed,
+            failed,
+            len(all_triplets),
+        )
+        return all_triplets
+
+    # ── Internal helpers ──────────────────────────────────────────────────────
+
+    def _extract_with_retry(
+        self, chunk: dict[str, Any]
+    ) -> list[dict[str, str]] | None:
+        """
+        Call Gemini with exponential backoff.
+        Returns parsed triplet list, or None if all retries exhausted.
+        """
+        text = chunk.get("text", "").strip()
+        if not text:
+            logger.debug("Skipping empty chunk %s", chunk.get("chunk_id"))
+            return []
+
+        prompt = TRIPLET_PROMPT.format(text=text)
+
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                response = self.llm.invoke([HumanMessage(content=prompt)])
+                return self._parse_response(response.content, chunk)
+
+            except json.JSONDecodeError as exc:
+                # LLM returned non-JSON — log and skip (no retry; same prompt will fail again)
+                logger.warning(
+                    "JSON parse error on chunk %s (attempt %d): %s",
+                    chunk.get("chunk_id"),
+                    attempt,
+                    exc,
+                )
+                self._log_skip(chunk, reason=f"json_parse_error: {exc}")
+                return []  # treat as zero triplets, not a fatal error
+
+            except Exception as exc:  # noqa: BLE001  (broad — covers API errors)
+                wait = BACKOFF_BASE ** attempt
+                logger.warning(
+                    "API error on chunk %s (attempt %d/%d): %s — retrying in %ds",
+                    chunk.get("chunk_id"),
+                    attempt,
+                    MAX_RETRIES,
+                    exc,
+                    wait,
+                )
+                if attempt < MAX_RETRIES:
+                    time.sleep(wait)
+                else:
+                    logger.error(
+                        "Giving up on chunk %s after %d attempts",
+                        chunk.get("chunk_id"),
+                        MAX_RETRIES,
+                    )
+                    return None  # caller will log skip
+
+        return None  # unreachable but satisfies type checker
+
+    def _parse_response(
+        self, raw: str, chunk: dict[str, Any]
+    ) -> list[dict[str, str]]:
+        """Strip markdown fences if present, then parse JSON."""
+        cleaned = raw.strip()
+        # Strip ```json ... ``` wrappers that Gemini sometimes adds
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("```")[1]
+            if cleaned.startswith("json"):
+                cleaned = cleaned[4:]
+        cleaned = cleaned.strip()
+
+        parsed = json.loads(cleaned)  # raises JSONDecodeError → caught by caller
+
+        if not isinstance(parsed, list):
+            logger.warning(
+                "Unexpected LLM output type %s on chunk %s — expected list",
+                type(parsed).__name__,
+                chunk.get("chunk_id"),
+            )
+            return []
+
+        # Validate each triplet has the required keys
+        valid = []
+        for item in parsed:
+            if all(k in item for k in ("subject", "predicate", "object")):
+                valid.append(
+                    {
+                        "subject": str(item["subject"]).strip(),
+                        "predicate": str(item["predicate"]).strip(),
+                        "object": str(item["object"]).strip(),
+                    }
+                )
+            else:
+                logger.debug("Dropping malformed triplet: %s", item)
+
+        return valid
+
+    def _log_skip(self, chunk: dict[str, Any], reason: str) -> None:
+        """Append failed chunk metadata to JSONL skip-log for later re-processing."""
+        record = {
+            "chunk_id": chunk.get("chunk_id", "unknown"),
+            "source": chunk.get("source", "unknown"),
+            "reason": reason,
+            "timestamp": time.time(),
+        }
+        with SKIP_LOG_PATH.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record) + "\n")
+        logger.debug("Logged skip: %s", record)

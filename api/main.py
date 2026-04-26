@@ -1,21 +1,32 @@
-"""
-DeepChain-Hybrid-RAG: Enterprise Knowledge Intelligence
-Module: FastAPI Backend Server
-"""
-
 import os
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+# Project Imports
 from ingestion.pipeline import IngestionPipeline
 from retrieval.hybrid_retriever import HybridRetriever
 from graph.neo4j_client import Neo4jClient
 from vector_store.weaviate_client import WeaviateClient
 from langchain_google_genai import ChatGoogleGenerativeAI
-from dotenv import load_dotenv
 
 load_dotenv()
 
 app = FastAPI(title="DeepChain Hybrid RAG API")
+
+# --- Monitoring ---
+Instrumentator().instrument(app).expose(app)
+
+# --- CORS Configuration ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Dependency Initialization ---
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)

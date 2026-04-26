@@ -9,9 +9,9 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from dotenv import load_dotenv
 
 load_dotenv()
-
 class GeminiEmbedder:
-    def __init__(self, model: str = "models/embedding-001"):
+    def __init__(self, model: str | None = None):
+        model = model or os.getenv("EMBEDDING_MODEL", "models/text-embedding-04")
         self.embeddings = GoogleGenerativeAIEmbeddings(model=model)
 
     def embed_query(self, text: str) -> List[float]:

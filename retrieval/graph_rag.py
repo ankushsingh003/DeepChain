@@ -300,8 +300,12 @@ class GraphRAG:
             f"vector={len(vector_hits)} graph={len(graph_facts)} fused={len(fused)}"
         )
 
+        answer = response.content
+        if isinstance(answer, list):
+            answer = "".join([part.get("text", "") if isinstance(part, dict) else str(part) for part in answer])
+
         return {
-            "answer": response.content,
+            "answer": answer,
             "vector_chunks": vector_hits,
             "graph_facts": graph_facts,
             "entities": entities,

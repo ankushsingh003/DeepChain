@@ -90,7 +90,12 @@ class TripletExtractor:
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 response = self.llm.invoke([HumanMessage(content=prompt)])
-                return self._parse_response(response.content, chunk)
+                
+                content = response.content
+                if isinstance(content, list):
+                    content = "".join([part.get("text", "") if isinstance(part, dict) else str(part) for part in content])
+                
+                return self._parse_response(content, chunk)
 
             except json.JSONDecodeError as exc:
                 # LLM returned non-JSON — log and skip (no retry; same prompt will fail again)

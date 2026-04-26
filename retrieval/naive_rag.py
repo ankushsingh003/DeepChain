@@ -241,6 +241,8 @@ class NaiveRAG:
         chain = _ANSWER_PROMPT | self.llm
         response = chain.invoke({"context": context, "question": question})
         answer = response.content
+        if isinstance(answer, list):
+            answer = "".join([part.get("text", "") if isinstance(part, dict) else str(part) for part in answer])
 
         # 7. Cache result
         if self._cache:

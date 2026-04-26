@@ -88,7 +88,14 @@ class GraphExtractor:
         for attempt in range(1, self.max_retries + 1):
             try:
                 response = self.llm.invoke(_input.to_messages())
-                return self.parser.parse(response.content)
+                
+                # Handle cases where response.content might be a list of dicts (parts) 
+                # instead of a plain string in newer langchain-google-genai versions.
+                content = response.content
+                if isinstance(content, list):
+                    content = "".join([part.get("text", "") if isinstance(part, dict) else str(part) for part in content])
+                
+                return self.parser.parse(content)
             except Exception as e:
                 wait = self.retry_base_delay * (2 ** (attempt - 1))
                 logger.warning(f"  [extractor] Attempt {attempt}/{self.max_retries} failed: {e}")

@@ -160,7 +160,7 @@ class IngestionPipeline:
     def __init__(self, data_path: str = "data/sample_docs"):
         self.loader          = DocumentLoader(data_path)
         self.chunker         = DocumentChunker(chunk_size=1000, chunk_overlap=200)
-        self.extractor       = GraphExtractor(rate_limit_delay=1.5)
+        self.extractor       = GraphExtractor(rate_limit_delay=6.0, retry_base_delay=15.0)
         self.neo4j_client    = Neo4jClient()
         self.weaviate_client = WeaviateClient()
         self.embedder        = GeminiEmbedder()
@@ -253,7 +253,11 @@ class IngestionPipeline:
                         "source":      c["source"],
                         "chunk_id":    int(c["chunk_id"]) if str(c["chunk_id"]).isdigit() else sub_start + j,
                         "page_number": c["page_number"],
-                        "file_name":   c["file_name"],
+                        "doc_type":    c["file_name"].split(".")[-1] if "." in c["file_name"] else "unknown",
+                        "section":     "",
+                        "language":    "en",
+                        "token_count": len(c["text"].split()),
+                        "created_at":  time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     }
                     for j, c in enumerate(sub_batch)
                 ])

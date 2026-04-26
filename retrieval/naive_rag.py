@@ -23,7 +23,7 @@ class NaiveRAG:
         """Standard RAG flow: Retrieve -> Augment -> Generate."""
         # 1. Retrieve
         hits = self.retriever.retrieve(question, top_k=top_k)
-        context = "\n---\n".join([hit["content"] for hit in hits])
+        context = "\n---\n".join([hit.content for hit in hits])
         
         # 2. Augment & Generate
         chain = self.prompt | self.llm

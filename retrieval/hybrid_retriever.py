@@ -49,16 +49,14 @@ class HybridRetriever:
         self.graph_depth = graph_depth
         self._neo4j_uri = neo4j_uri
         self._neo4j_auth = (neo4j_user, neo4j_password)
-        self._weaviate_host = weaviate_host
-        self._weaviate_port = weaviate_port
 
-        import os
-        self._embeddings = GoogleGenerativeAIEmbeddings(
-            model=os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001")
-        )
-        self._weaviate_client = weaviate.connect_to_local(
-            host=weaviate_host, port=weaviate_port
-        )
+        from vector_store.weaviate_client import WeaviateClient
+        from vector_store.retriever import VectorRetriever
+        from vector_store.embedder import GeminiEmbedder
+
+        self._weaviate_client = WeaviateClient()
+        self._embedder = GeminiEmbedder()
+        self._vector_retriever = VectorRetriever(self._weaviate_client, self._embedder, default_top_k=top_k)
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -111,7 +109,8 @@ class HybridRetriever:
         """Called at FastAPI startup to surface connection issues early."""
         status = {"weaviate": False, "neo4j": False}
         try:
-            self._weaviate_client.is_ready()
+            # Weaviate v4 check
+            self._weaviate_client.client.is_ready()
             status["weaviate"] = True
         except Exception as exc:  # noqa: BLE001
             logger.error("Weaviate health check failed: %s", exc)
@@ -130,21 +129,21 @@ class HybridRetriever:
 
     def _naive_retrieve(self, query: str) -> RetrievalResult:
         """Pure vector similarity search against Weaviate."""
-        query_vector = self._embeddings.embed_query(query)
-        collection = self._weaviate_client.collections.get("DocumentChunk")
-
-        response = collection.query.near_vector(
-            near_vector=query_vector,
-            limit=self.top_k,
-            return_properties=["text", "source", "chunk_id"],
-        )
-        chunks = [
-            {"text": o.properties["text"],
-             "source": o.properties.get("source", ""),
-             "chunk_id": o.properties.get("chunk_id", "")}
-            for o in response.objects
-        ]
-        return RetrievalResult(chunks=chunks, mode_used="naive")
+        try:
+            results = self._vector_retriever.retrieve(query, top_k=self.top_k)
+            chunks = [
+                {
+                    "text": r.content,
+                    "source": r.source,
+                    "chunk_id": r.chunk_id,
+                    "score": r.score
+                }
+                for r in results
+            ]
+            return RetrievalResult(chunks=chunks, mode_used="naive")
+        except Exception as e:
+            logger.error(f"Vector retrieval failed: {e}")
+            return RetrievalResult(chunks=[], mode_used="naive", fallback_reason=str(e))
 
     def _graph_retrieve(self, query: str) -> RetrievalResult | None:
         """

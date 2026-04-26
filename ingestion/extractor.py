@@ -141,7 +141,7 @@ class KnowledgeGraph(BaseModel):
 class GraphExtractor:
     def __init__(
         self,
-        model_name: str = "gemini-1.5-flash",
+        model_name: str = "gemini-2.5-flash",
         max_retries: int = 3,
         rate_limit_delay: float = 1.5,   # seconds between LLM calls to respect RPM quota
         retry_base_delay: float = 5.0,    # base seconds for exponential backoff on failure

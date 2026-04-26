@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg text-text antialiased min-h-screen overflow-x-hidden selection:bg-finance selection:text-bg;
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  /* GRID BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+@layer components {
+  .hero-badge {
+    @apply inline-flex items-center gap-1.5 text-[11px] font-mono tracking-[0.08em] uppercase text-finance border border-finance/25 rounded-full px-4 py-1.5 mb-10 bg-finance/5;
+  }
+
+  .nav-pill {
+    @apply text-[12px] text-muted px-3 py-1 border border-border rounded-full cursor-pointer transition-all hover:text-text hover:border-border2 bg-transparent font-sans;
+  }
+
+  .domain-card {
+    @apply border border-border rounded-2xl p-9 cursor-pointer transition-all duration-300 relative overflow-hidden bg-bg2 hover:-translate-y-1 hover:border-border2;
+  }
+
+  .glass-card {
+    @apply backdrop-blur-xl bg-bg/85 border border-border;
+  }
+}
+
+/* Custom animations and scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

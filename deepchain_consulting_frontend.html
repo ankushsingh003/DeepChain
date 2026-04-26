@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DeepChain</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #11111a;
+    --bg3: #18182a;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --muted: rgba(240,237,232,0.5);
+    --dim: rgba(240,237,232,0.28);
+
+    --finance: #E8D17A;
+    --finance-bg: rgba(232,209,122,0.08);
+    --finance-glow: rgba(232,209,122,0.18);
+
+    --health: #6ECFA0;
+    --health-bg: rgba(110,207,160,0.08);
+    --health-glow: rgba(110,207,160,0.18);
+
+    --legal: #A78BFA;
+    --legal-bg: rgba(167,139,250,0.08);
+    --legal-glow: rgba(167,139,250,0.18);
+
+    --mental: #F4957A;
+    --mental-bg: rgba(244,149,122,0.08);
+    --mental-glow: rgba(244,149,122,0.18);
+
+    --radius: 16px;
+    --radius-sm: 8px;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* GRID BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; }
+
+  /* NAV */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,10,15,0.85);
+  }
+
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--serif);
+    font-size: 20px;
+    letter-spacing: -0.3px;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--finance);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.7); }
+  }
+
+  .nav-pills { display: flex; gap: 8px; }
+  .nav-pill {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    font-family: var(--sans);
+  }
+  .nav-pill:hover { color: var(--text); border-color: var(--border2); }
+
+  /* PAGE VIEWS */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ========== LANDING PAGE ========== */
+  .hero {
+    min-height: calc(100vh - 65px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 48px;
+    gap: 0;
+    position: relative;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--finance);
+    border: 1px solid rgba(232,209,122,0.25);
+    border-radius: 100px;
+    padding: 6px 16px;
+    margin-bottom: 40px;
+    background: rgba(232,209,122,0.05);
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--finance);
+    animation: pulse-dot 1.5s ease-in-out infinite;
+  }
+
+  .hero-title {
+    font-family: var(--serif);
+    font-size: clamp(48px, 6vw, 88px);
+    line-height: 1.02;
+    letter-spacing: -2px;
+    color: var(--text);
+    margin-bottom: 28px;
+    max-width: 820px;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: rgba(240,237,232,0.55);
+  }
+
+  .hero-sub {
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--muted);
+    max-width: 520px;
+    margin-bottom: 56px;
+    font-weight: 300;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #0a0a0f;
+    background: var(--text);
+    border: none;
+    border-radius: 100px;
+    padding: 16px 36px;
+    cursor: pointer;
+    transition: all 0.25s;
+    font-family: var(--sans);
+  }
+
+  .hero-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(240,237,232,0.15);
+  }
+
+  .hero-cta svg { transition: transform 0.2s; }
+  .hero-cta:hover svg { transform: translateX(3px); }
+
+  .hero-stats {
+    margin-top: 80px;
+    display: flex;
+    gap: 64px;
+    border-top: 1px solid var(--border);
+    padding-top: 40px;
+  }
+
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: var(--serif);
+    font-size: 32px;
+    color: var(--text);
+    display: block;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-label { font-size: 12px; color: var(--dim); font-family: var(--mono); letter-spacing: 0.06em; }
+
+  .differentiators {
+    padding: 80px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .diff-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .diff-title {
+    font-family: var(--serif);
+    font-size: 32px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .diff-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .diff-item {
+    background: var(--bg);
+    padding: 32px;
+    transition: background 0.2s;
+  }
+  .diff-item:hover { background: var(--bg2); }
+
+  .diff-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    font-size: 16px;
+  }
+
+  .diff-item-title {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  .diff-item-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  .tech-strip {
+    padding: 40px 48px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    overflow-x: auto;
+    margin-bottom: 80px;
+  }
+
+  .tech-label { font-size: 11px; color: var(--dim); font-family: var(--mono); white-space: nowrap; letter-spacing: 0.08em; }
+
+  .tech-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-family: var(--mono);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 14px;
+    white-space: nowrap;
+    background: var(--bg2);
+  }
+
+  .tech-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+  /* ========== DOMAIN SELECTION ========== */
+  .domains-page { padding: 60px 48px; max-width: 1100px; margin: 0 auto; }
+
+  .page-header { margin-bottom: 56px; }
+  .page-header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--muted);
+    background: none; border: 1px solid var(--border);
+    border-radius: 100px; padding: 6px 14px;
+    cursor: pointer; font-family: var(--sans);
+    transition: all 0.2s;
+  }
+  .back-btn:hover { color: var(--text); border-color: var(--border2); }
+
+  .page-title {
+    font-family: var(--serif);
+    font-size: 42px;
+    letter-spacing: -0.8px;
+    margin-bottom: 12px;
+    line-height: 1.1;
+  }
+
+  .page-sub { font-size: 15px; color: var(--muted); font-weight: 300; }
+
+  .domains-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .domain-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg2);
+  }
+
+  .domain-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: var(--accent-color, transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .domain-card:hover { transform: translateY(-4px); border-color: var(--border2); }
+  .domain-card:hover::before { opacity: 1; }
+
+  .domain-card.finance { --accent-color: var(--finance); }
+  .domain-card.health { --accent-color: var(--health); }
+  .domain-card.legal { --accent-color: var(--legal); }
+  .domain-card.mental { --accent-color: var(--mental); }
+
+  .domain-card.finance:hover { box-shadow: 0 20px 60px var(--finance-glow); }
+  .domain-card.health:hover { box-shadow: 0 20px 60px var(--health-glow); }
+  .domain-card.legal:hover { box-shadow: 0 20px 60px var(--legal-glow); }
+  .domain-card.mental:hover { box-shadow: 0 20px 60px var(--mental-glow); }
+
+  .domain-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+
+  .domain-icon-wrap {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    border: 1px solid var(--border);
+  }
+
+  .domain-card.finance .domain-icon-wrap { background: var(--finance-bg); border-color: rgba(232,209,122,0.2); }
+  .domain-card.health .domain-icon-wrap { background: var(--health-bg); border-color: rgba(110,207,160,0.2); }
+  .domain-card.legal .domain-icon-wrap { background: var(--legal-bg); border-color: rgba(167,139,250,0.2); }
+  .domain-card.mental .domain-icon-wrap { background: var(--mental-bg); border-color: rgba(244,149,122,0.2); }
+
+  .domain-tag {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 100px;
+    border: 1px solid;
+  }
+
+  .finance .domain-tag { color: var(--finance); border-color: rgba(232,209,122,0.3); background: var(--finance-bg); }
+  .health .domain-tag { color: var(--health); border-color: rgba(110,207,160,0.3); background: var(--health-bg); }
+  .legal .domain-tag { color: var(--legal); border-color: rgba(167,139,250,0.3); background: var(--legal-bg); }
+  .mental .domain-tag { color: var(--mental); border-color: rgba(244,149,122,0.3); background: var(--mental-bg); }
+
+  .domain-name {
+    font-family: var(--serif);
+    font-size: 26px;
+    margin-bottom: 10px;
+    letter-spacing: -0.3px;
+    line-height: 1.15;
+  }
+
+  .domain-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.65;
+    margin-bottom: 28px;
+    font-weight: 300;
+  }
+
+  .domain-features {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .domain-feature {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+  }
+
+  .feat-dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .finance .feat-dot { background: var(--finance); }
+  .health .feat-dot { background: var(--health); }
+  .legal .feat-dot { background: var(--legal); }
+  .mental .feat-dot { background: var(--mental); }
+
+  .domain-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .domain-meta { font-size: 11px; color: var(--dim); font-family: var(--mono); }
+
+  .domain-enter {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 500;
+    padding: 8px 18px;
+    border-radius: 100px;
+    border: 1px solid;
+    transition: all 0.2s;
+    cursor: pointer;
+    font-family: var(--sans);
+    background: transparent;
+  }
+
+  .finance .domain-enter { color: var(--finance); border-color: rgba(232,209,122,0.35); }
+  .finance .domain-enter:hover { background: var(--finance-bg); }
+  .health .domain-enter { color: var(--health); border-color: rgba(110,207,160,0.35); }
+  .health .domain-enter:hover { background: var(--health-bg); }
+  .legal .domain-enter { color: var(--legal); border-color: rgba(167,139,250,0.35); }
+  .legal .domain-enter:hover { background: var(--legal-bg); }
+  .mental .domain-enter { color: var(--mental); border-color: rgba(244,149,122,0.35); }
+  .mental .domain-enter:hover { background: var(--mental-bg); }
+
+  /* ========== CONSULTATION PAGE ========== */
+  .consult-page { display: flex; height: calc(100vh - 65px); }
+
+  .consult-sidebar {
+    width: 300px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    background: var(--bg2);
+  }
+
+  .sidebar-domain {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg3);
+  }
+
+  .sidebar-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .sidebar-domain-name { font-size: 14px; font-weight: 500; }
+  .sidebar-domain-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  .sidebar-section { }
+  .sidebar-section-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+
+  .sidebar-sources {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+
+  .source-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .source-icon {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .source-name { flex: 1; font-family: var(--mono); font-size: 11px; }
+  .source-count { font-size: 10px; color: var(--dim); font-family: var(--mono); }
+
+  .pipeline-badge {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg3);
+  }
+
+  .pipeline-badge-label {
+    font-size: 10px; font-family: var(--mono);
+    color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  .pipeline-steps { display: flex; flex-direction: column; gap: 6px; }
+
+  .pipeline-step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-family: var(--mono); color: var(--muted);
+  }
+
+  .pipeline-step-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--dim);
+  }
+
+  .pipeline-step.active .pipeline-step-dot { background: var(--health); }
+  .pipeline-step.done .pipeline-step-dot { background: var(--finance); }
+
+  /* CHAT AREA */
+  .consult-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .chat-header {
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+  }
+
+  .chat-header-left { display: flex; flex-direction: column; gap: 4px; }
+  .chat-session { font-size: 13px; font-weight: 500; }
+  .chat-status { font-size: 11px; color: var(--muted); font-family: var(--mono); display: flex; align-items: center; gap: 5px; }
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--health); animation: pulse-dot 1.5s ease-in-out infinite; }
+
+  .chat-controls { display: flex; gap: 8px; }
+  .ctrl-btn {
+    font-size: 11px; font-family: var(--mono);
+    color: var(--muted); background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 12px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .ctrl-btn:hover { color: var(--text); border-color: var(--border2); }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .msg { max-width: 640px; }
+  .msg.assistant { align-self: flex-start; }
+  .msg.user { align-self: flex-end; }
+
+  .msg-meta {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .msg-avatar {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500;
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+
+  .msg.assistant .msg-avatar { background: var(--bg3); border: 1px solid var(--border); color: var(--muted); }
+  .msg.user .msg-avatar { background: rgba(240,237,232,0.1); border: 1px solid var(--border); color: var(--text); }
+
+  .msg-sender { font-size: 11px; color: var(--dim); font-family: var(--mono); }
+
+  .msg-bubble {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .msg.user .msg-bubble {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px 12px 4px 12px;
+    padding: 14px 18px;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .msg.assistant .msg-bubble {
+    padding: 0;
+  }
+
+  .citation-strip {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 14px;
+  }
+
+  .citation {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-family: var(--mono);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 3px 10px;
+    background: var(--bg2);
+  }
+
+  .citation-icon { font-size: 9px; }
+
+  .graph-snippet {
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg3);
+  }
+
+  .graph-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px; font-family: var(--mono);
+    color: var(--dim);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .graph-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .graph-triplet {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-family: var(--mono);
+  }
+
+  .triplet-node {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid;
+    white-space: nowrap;
+    font-size: 10px;
+  }
+
+  .triplet-edge {
+    color: var(--dim);
+    font-size: 10px;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  .conf-score {
+    font-size: 10px; color: var(--dim);
+    margin-left: auto;
+    font-family: var(--mono);
+  }
+
+  /* Suggested queries */
+  .suggested-queries {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 16px;
+  }
+
+  .sq-btn {
+    font-size: 12px; font-family: var(--sans);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 7px 14px;
+    background: var(--bg2);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .sq-btn:hover { color: var(--text); border-color: var(--border2); background: var(--bg3); }
+
+  /* INPUT BAR */
+  .chat-input-area {
+    padding: 20px 32px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .input-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+
+  .input-wrap:focus-within { border-color: rgba(240,237,232,0.25); }
+
+  .msg-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text);
+    resize: none;
+    line-height: 1.5;
+    min-height: 22px;
+    max-height: 120px;
+  }
+
+  .msg-input::placeholder { color: var(--dim); }
+
+  .input-actions { display: flex; gap: 8px; align-items: center; }
+
+  .retrieval-toggle {
+    font-size: 10px; font-family: var(--mono);
+    color: var(--dim);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    background: none; cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .retrieval-toggle.active { color: var(--finance); border-color: rgba(232,209,122,0.3); background: var(--finance-bg); }
+
+  .send-btn {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .send-btn:hover { transform: scale(1.05); }
+
+  .input-hints {
+    display: flex; gap: 16px;
+    margin-top: 10px;
+    padding: 0 4px;
+  }
+
+  .hint { font-size: 10px; font-family: var(--mono); color: var(--dim); }
+
+  /* Right panel */
+  .consult-right {
+    width: 280px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border);
+    padding: 24px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background: var(--bg2);
+  }
+
+  .right-section-label {
+    font-size: 10px; font-family: var(--mono);
+    color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  .context-graph {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    background: var(--bg3);
+  }
+
+  .cg-nodes { display: flex; flex-direction: column; gap: 8px; }
+
+  .cg-node {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-family: var(--mono);
+  }
+
+  .cg-node-circle {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .cg-node-label { color: var(--muted); flex: 1; }
+  .cg-node-type { font-size: 9px; color: var(--dim); }
+
+  .relevance-bar { margin-top: 4px; }
+  .relevance-bar-label {
+    display: flex; justify-content: space-between;
+    font-size: 9px; font-family: var(--mono); color: var(--dim);
+    margin-bottom: 4px;
+  }
+
+  .bar-track {
+    height: 3px; background: var(--bg);
+    border-radius: 2px; overflow: hidden;
+  }
+
+  .bar-fill { height: 100%; border-radius: 2px; }
+
+  .retrieval-metrics { display: flex; flex-direction: column; gap: 8px; }
+
+  .metric-row {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .metric-key { font-size: 11px; color: var(--muted); }
+  .metric-val { font-size: 11px; font-family: var(--mono); font-weight: 500; }
+
+  /* Utility */
+  .animate-in {
+    animation: fadeUp 0.4s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .typing-indicator {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 0;
+  }
+
+  .typing-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--muted);
+    animation: blink 1.2s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" onclick="showPage('landing')" style="cursor:pointer">
+      <span class="logo-dot"></span>
+      DeepChain
+    </a>
+    <div class="nav-pills">
+      <button class="nav-pill">GraphRAG</button>
+      <button class="nav-pill">Neo4j + Weaviate</button>
+      <button class="nav-pill">Hybrid Retrieval</button>
+    </div>
+  </nav>
+
+  <!-- ====== LANDING ====== -->
+  <div id="page-landing" class="page active app">
+    <section class="hero">
+      <div class="hero-badge">Knowledge Graph · Hybrid RAG · Enterprise Intelligence</div>
+
+      <h1 class="hero-title">
+        Deep reasoning over<br/><em>complex knowledge</em>
+      </h1>
+
+      <p class="hero-sub">
+        Combines structural graph traversal with semantic vector retrieval — delivering answers that are factually grounded, source-traced, and domain-faithful.
+      </p>
+
+      <button class="hero-cta" onclick="showPage('domains')">
+        Get Consulted
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-num">4</span>
+          <span class="stat-label">Domains</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">2×</span>
+          <span class="stat-label">Retrieval Modes</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">Neo4j</span>
+          <span class="stat-label">+ Weaviate</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">Ragas</span>
+          <span class="stat-label">Evaluated</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- DIFFERENTIATORS -->
+    <div class="differentiators">
+      <div class="diff-header">
+        <span class="section-label">Why DeepChain</span>
+        <h2 class="diff-title">Not another chatbot</h2>
+      </div>
+
+      <div class="diff-grid">
+        <div class="diff-item">
+          <div class="diff-icon" style="background:var(--finance-bg); border:1px solid rgba(232,209,122,0.2)">🕸️</div>
+          <div class="diff-item-title">Graph-anchored context</div>
+          <div class="diff-item-desc">Entity relationships from Neo4j provide structural grounding that pure vector search misses entirely.</div>
+        </div>
+        <div class="diff-item">
+          <div class="diff-icon" style="background:var(--health-bg); border:1px solid rgba(110,207,160,0.2)">⚡</div>
+          <div class="diff-item-title">Hybrid fusion retrieval</div>
+          <div class="diff-item-desc">Combines sparse graph facts with dense semantic chunks — best of both retrieval paradigms in a single pass.</div>
+        </div>
+        <div class="diff-item">
+          <div class="diff-icon" style="background:var(--legal-bg); border:1px solid rgba(167,139,250,0.2)">📊</div>
+          <div class="diff-item-title">Ragas-evaluated faithfulness</div>
+          <div class="diff-item-desc">Every retrieval mode is benchmarked on answer faithfulness, context precision, and recall. No blind trust.</div>
+        </div>
+        <div class="diff-item">
+          <div class="diff-icon" style="background:var(--mental-bg); border:1px solid rgba(244,149,122,0.2)">🔎</div>
+          <div class="diff-item-title">Source-traced answers</div>
+          <div class="diff-item-desc">Every answer surfaces its origin — which graph triplet, which document chunk, which confidence score.</div>
+        </div>
+        <div class="diff-item">
+          <div class="diff-icon" style="background:var(--finance-bg); border:1px solid rgba(232,209,122,0.2)">🧪</div>
+          <div class="diff-item-title">MLflow experiment tracking</div>
+          <div class="diff-item-desc">Full observability on retrieval strategies with Prometheus + Grafana monitoring stack baked in.</div>
+        </div>
+        <div class="diff-item">
+          <div class="diff-icon" style="background:var(--health-bg); border:1px solid rgba(110,207,160,0.2)">🏗️</div>
+          <div class="diff-item-title">Domain-specific ingestion</div>
+          <div class="diff-item-desc">Semantic chunking with LLM-extracted triplets — not generic splitting. Every domain gets specialized treatment.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TECH STRIP -->
+    <div class="tech-strip">
+      <span class="tech-label">STACK</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#6ECFA0"></span>Neo4j</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#E8D17A"></span>Weaviate</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#A78BFA"></span>LangChain</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#F4957A"></span>Gemini 1.5 Pro</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#6ECFA0"></span>FastAPI</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#E8D17A"></span>MLflow</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#A78BFA"></span>Prometheus</span>
+      <span class="tech-pill"><span class="tech-dot" style="background:#F4957A"></span>Ragas</span>
+    </div>
+  </div>
+
+  <!-- ====== DOMAIN SELECTION ====== -->
+  <div id="page-domains" class="page">
+    <div class="domains-page">
+      <div class="page-header">
+        <div class="page-header-top">
+          <button class="back-btn" onclick="showPage('landing')">
+            ← Back
+          </button>
+        </div>
+        <h2 class="page-title">Choose your domain</h2>
+        <p class="page-sub">Select a knowledge domain — DeepChain will route your query through the right graph context and retrieval pipeline.</p>
+      </div>
+
+      <div class="domains-grid">
+
+        <!-- FINANCE -->
+        <div class="domain-card finance animate-in" onclick="openConsult('finance')" style="animation-delay:0s">
+          <div class="domain-top">
+            <div class="domain-icon-wrap">💰</div>
+            <span class="domain-tag">High Priority</span>
+          </div>
+          <div class="domain-name">Financial Intelligence</div>
+          <div class="domain-desc">Structured analysis over financial filings, market data, regulatory frameworks, and investment knowledge graphs.</div>
+          <div class="domain-features">
+            <div class="domain-feature"><span class="feat-dot"></span>SEC filings &amp; earnings analysis</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Risk factor extraction &amp; mapping</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Multi-entity relationship traversal</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Regulatory compliance queries</div>
+          </div>
+          <div class="domain-footer">
+            <span class="domain-meta">GraphRAG + Vector · Weaviate + Neo4j</span>
+            <button class="domain-enter" onclick="openConsult('finance')">
+              Enter
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- HEALTH -->
+        <div class="domain-card health animate-in" onclick="openConsult('health')" style="animation-delay:0.07s">
+          <div class="domain-top">
+            <div class="domain-icon-wrap">🏥</div>
+            <span class="domain-tag">High Priority</span>
+          </div>
+          <div class="domain-name">Healthcare & Medical</div>
+          <div class="domain-desc">Clinical knowledge retrieval across drug interactions, diagnostic pathways, treatment protocols, and biomedical literature.</div>
+          <div class="domain-features">
+            <div class="domain-feature"><span class="feat-dot"></span>Drug-drug interaction mapping</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Diagnostic pathway traversal</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Clinical trial evidence retrieval</div>
+            <div class="domain-feature"><span class="feat-dot"></span>ICD-10 / SNOMED entity linking</div>
+          </div>
+          <div class="domain-footer">
+            <span class="domain-meta">GraphRAG + Vector · PubMed + UMLS</span>
+            <button class="domain-enter" onclick="openConsult('health')">
+              Enter
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- LEGAL -->
+        <div class="domain-card legal animate-in" onclick="openConsult('legal')" style="animation-delay:0.14s">
+          <div class="domain-top">
+            <div class="domain-icon-wrap">⚖️</div>
+            <span class="domain-tag">Complex Reasoning</span>
+          </div>
+          <div class="domain-name">Legal Proceedings</div>
+          <div class="domain-desc">Case law analysis, statute interpretation, precedent chains, and contract clause extraction powered by knowledge graphs.</div>
+          <div class="domain-features">
+            <div class="domain-feature"><span class="feat-dot"></span>Precedent chain graph traversal</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Statute cross-reference mapping</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Contract clause extraction</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Jurisdiction-aware retrieval</div>
+          </div>
+          <div class="domain-footer">
+            <span class="domain-meta">GraphRAG + Vector · Case Law + Statutes</span>
+            <button class="domain-enter" onclick="openConsult('legal')">
+              Enter
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- MENTAL HEALTH / WELLNESS -->
+        <div class="domain-card mental animate-in" onclick="openConsult('mental')" style="animation-delay:0.21s">
+          <div class="domain-top">
+            <div class="domain-icon-wrap">🧠</div>
+            <span class="domain-tag">Semantic Depth</span>
+          </div>
+          <div class="domain-name">Mental Health & Wellness</div>
+          <div class="domain-desc">Evidence-based therapeutic knowledge, DSM-5 criteria mapping, and treatment approach retrieval for mental health professionals.</div>
+          <div class="domain-features">
+            <div class="domain-feature"><span class="feat-dot"></span>DSM-5 diagnostic criteria graphs</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Therapeutic modality comparison</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Medication profile retrieval</div>
+            <div class="domain-feature"><span class="feat-dot"></span>Comorbidity relationship mapping</div>
+          </div>
+          <div class="domain-footer">
+            <span class="domain-meta">Hybrid Vector · DSM-5 + PsycINFO</span>
+            <button class="domain-enter" onclick="openConsult('mental')">
+              Enter
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== CONSULTATION PAGE ====== -->
+  <div id="page-consult" class="page">
+    <div class="consult-page">
+
+      <!-- LEFT SIDEBAR -->
+      <aside class="consult-sidebar" id="sidebar">
+        <!-- domain badge injected here -->
+        <div id="sidebar-domain"></div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Knowledge Sources</div>
+          <div class="sidebar-sources" id="sidebar-sources"></div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Retrieval Pipeline</div>
+          <div class="pipeline-badge">
+            <div class="pipeline-badge-label">Active mode: GraphRAG</div>
+            <div class="pipeline-steps">
+              <div class="pipeline-step done"><span class="pipeline-step-dot"></span>Query entity extraction</div>
+              <div class="pipeline-step done"><span class="pipeline-step-dot"></span>Graph subgraph retrieval</div>
+              <div class="pipeline-step active"><span class="pipeline-step-dot"></span>Vector chunk fusion</div>
+              <div class="pipeline-step"><span class="pipeline-step-dot"></span>LLM generation</div>
+              <div class="pipeline-step"><span class="pipeline-step-dot"></span>Citation assembly</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CHAT -->
+      <main class="consult-main">
+        <div class="chat-header">
+          <div class="chat-header-left">
+            <span class="chat-session" id="chat-session-title">Financial Intelligence — New Session</span>
+            <span class="chat-status">
+              <span class="status-dot"></span>
+              GraphRAG active · Neo4j + Weaviate
+            </span>
+          </div>
+          <div class="chat-controls">
+            <button class="ctrl-btn" id="mode-toggle" onclick="toggleMode()">mode: GraphRAG</button>
+            <button class="ctrl-btn" onclick="showPage('domains')">← Domains</button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <!-- messages injected -->
+        </div>
+
+        <div class="chat-input-area">
+          <div class="input-wrap">
+            <textarea
+              class="msg-input"
+              id="msg-input"
+              placeholder="Ask anything about your domain..."
+              rows="1"
+              onkeydown="handleKey(event)"
+              oninput="autoResize(this)"
+            ></textarea>
+            <div class="input-actions">
+              <button class="retrieval-toggle active" id="graph-toggle" onclick="toggleGraphMode()">graph</button>
+              <button class="retrieval-toggle" id="vec-toggle" onclick="toggleVecMode()">vector</button>
+              <button class="send-btn" onclick="sendMessage()">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 12L12 7 2 2v3.5L8.5 7 2 8.5V12z" fill="currentColor"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="input-hints">
+            <span class="hint">↵ send · shift+↵ newline</span>
+            <span class="hint">graph = GraphRAG · vector = naive RAG</span>
+          </div>
+        </div>
+      </main>
+
+      <!-- RIGHT PANEL -->
+      <aside class="consult-right">
+        <div class="sidebar-section">
+          <div class="right-section-label">Context Graph</div>
+          <div class="context-graph">
+            <div class="cg-nodes" id="cg-nodes">
+              <div style="font-size:11px;color:var(--dim);font-family:var(--mono)">Awaiting query...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="right-section-label">Retrieval Metrics</div>
+          <div class="retrieval-metrics" id="retrieval-metrics">
+            <div class="metric-row">
+              <span class="metric-key">Faithfulness</span>
+              <span class="metric-val" style="color:var(--health)">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">Context precision</span>
+              <span class="metric-val" style="color:var(--health)">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">Answer recall</span>
+              <span class="metric-val" style="color:var(--health)">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">Graph nodes hit</span>
+              <span class="metric-val" style="color:var(--finance)">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">Vec chunks used</span>
+              <span class="metric-val" style="color:var(--finance)">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="right-section-label">Relevance Scores</div>
+          <div id="relevance-bars">
+            <div style="font-size:11px;color:var(--dim);font-family:var(--mono)">Run a query to see scores</div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+const DOMAINS = {
+  finance: {
+    name: 'Financial Intelligence',
+    icon: '💰',
+    color: 'var(--finance)',
+    bg: 'var(--finance-bg)',
+    tag: 'Finance',
+    sources: [
+      { icon: '📄', name: 'SEC Filings', count: '14.2k chunks' },
+      { icon: '📊', name: 'Earnings Reports', count: '3.8k chunks' },
+      { icon: '🕸️', name: 'Company Graph', count: '28k nodes' },
+      { icon: '📰', name: 'Market News', count: '9.1k chunks' },
+    ],
+    greeting: `I'm your Financial Intelligence assistant powered by DeepChain's hybrid retrieval pipeline.\n\nI have access to SEC filings, earnings reports, market news, and a structured company relationship graph in Neo4j — combined with semantic vector search over Weaviate.\n\nHere are some things I can help with:`,
+    suggestions: [
+      'What are the key risk factors in Apple\'s latest 10-K filing?',
+      'How are NVIDIA and its supply chain partners connected?',
+      'Compare Q4 earnings guidance for major cloud providers',
+      'What regulatory changes affect fintech compliance in 2024?',
+    ],
+    graphNodes: [
+      { label: 'Apple Inc.', type: 'Company', color: 'var(--finance)' },
+      { label: 'Supply Chain', type: 'Relation', color: 'var(--health)' },
+      { label: 'TSMC', type: 'Company', color: 'var(--finance)' },
+      { label: 'SEC 10-K', type: 'Document', color: 'var(--legal)' },
+    ],
+    triplets: [
+      { s: 'Apple', p: 'manufactures_with', o: 'TSMC', color: 'var(--finance)' },
+      { s: 'TSMC', p: 'located_in', o: 'Taiwan', color: 'var(--health)' },
+    ]
+  },
+  health: {
+    name: 'Healthcare & Medical',
+    icon: '🏥',
+    color: 'var(--health)',
+    bg: 'var(--health-bg)',
+    tag: 'Healthcare',
+    sources: [
+      { icon: '📑', name: 'PubMed Literature', count: '41k chunks' },
+      { icon: '💊', name: 'Drug Database', count: '8.3k nodes' },
+      { icon: '🕸️', name: 'Biomedical Graph', count: '52k nodes' },
+      { icon: '🏥', name: 'Clinical Guidelines', count: '6.2k chunks' },
+    ],
+    greeting: `I'm your Healthcare & Medical assistant, powered by DeepChain's hybrid retrieval.\n\nI draw from PubMed literature, clinical guidelines, a structured biomedical knowledge graph (drugs, diseases, interactions), and ICD-10/SNOMED entity mappings.\n\nHere are some things I can help with:`,
+    suggestions: [
+      'What are the known drug-drug interactions for metformin?',
+      'Explain the diagnostic criteria for Type 2 Diabetes per ICD-10',
+      'What clinical trials exist for GLP-1 agonists in 2023–2024?',
+      'Map the pathway from BRCA1 mutation to breast cancer staging',
+    ],
+    graphNodes: [
+      { label: 'Metformin', type: 'Drug', color: 'var(--health)' },
+      { label: 'Type 2 Diabetes', type: 'Disease', color: 'var(--mental)' },
+      { label: 'AMPK Pathway', type: 'Pathway', color: 'var(--legal)' },
+      { label: 'Lactic Acidosis', type: 'Adverse Effect', color: 'var(--finance)' },
+    ],
+    triplets: [
+      { s: 'Metformin', p: 'treats', o: 'Type 2 Diabetes', color: 'var(--health)' },
+      { s: 'Metformin', p: 'may_cause', o: 'Lactic Acidosis', color: 'var(--mental)' },
+    ]
+  },
+  legal: {
+    name: 'Legal Proceedings',
+    icon: '⚖️',
+    color: 'var(--legal)',
+    bg: 'var(--legal-bg)',
+    tag: 'Legal',
+    sources: [
+      { icon: '📜', name: 'Case Law DB', count: '22k chunks' },
+      { icon: '🏛️', name: 'US Statutes', count: '15k nodes' },
+      { icon: '🕸️', name: 'Precedent Graph', count: '31k edges' },
+      { icon: '📋', name: 'Contract Corpus', count: '7.4k chunks' },
+    ],
+    greeting: `I'm your Legal Intelligence assistant, powered by DeepChain's hybrid retrieval.\n\nI traverse precedent chains in Neo4j, cross-reference statutes, and semantically search contract corpora — enabling multi-hop legal reasoning that simple keyword search can't achieve.\n\nHere are some things I can help with:`,
+    suggestions: [
+      'What precedents support fair use in AI-generated content cases?',
+      'How has GDPR been interpreted in EU court rulings since 2021?',
+      'Extract indemnification clauses common in SaaS contracts',
+      'What are the elements needed to prove negligence under tort law?',
+    ],
+    graphNodes: [
+      { label: 'Fair Use Doctrine', type: 'Legal Concept', color: 'var(--legal)' },
+      { label: 'Campbell v. Acuff-Rose', type: 'Case', color: 'var(--finance)' },
+      { label: 'Copyright Act §107', type: 'Statute', color: 'var(--health)' },
+      { label: 'Transformative Use', type: 'Factor', color: 'var(--mental)' },
+    ],
+    triplets: [
+      { s: 'Campbell v. Acuff-Rose', p: 'interprets', o: '§107 Factor 1', color: 'var(--legal)' },
+      { s: 'Transformative Use', p: 'strengthens', o: 'Fair Use Defense', color: 'var(--health)' },
+    ]
+  },
+  mental: {
+    name: 'Mental Health & Wellness',
+    icon: '🧠',
+    color: 'var(--mental)',
+    bg: 'var(--mental-bg)',
+    tag: 'Mental Health',
+    sources: [
+      { icon: '📗', name: 'DSM-5 Criteria', count: '4.1k nodes' },
+      { icon: '📚', name: 'PsycINFO', count: '29k chunks' },
+      { icon: '🕸️', name: 'Comorbidity Graph', count: '18k edges' },
+      { icon: '💊', name: 'Psychopharmacology', count: '5.6k chunks' },
+    ],
+    greeting: `I'm your Mental Health & Wellness assistant, powered by DeepChain's hybrid retrieval.\n\nI have access to DSM-5 diagnostic criteria, PsycINFO literature, a comorbidity relationship graph, and psychopharmacology data — enabling evidence-based clinical support.\n\nHere are some things I can help with:`,
+    suggestions: [
+      'What are the DSM-5 diagnostic criteria for Major Depressive Disorder?',
+      'Compare CBT and DBT for borderline personality disorder treatment',
+      'What comorbidities are most common with ADHD in adults?',
+      'Summarize evidence for SSRIs vs SNRIs in treatment-resistant depression',
+    ],
+    graphNodes: [
+      { label: 'Major Depression', type: 'Disorder', color: 'var(--mental)' },
+      { label: 'CBT', type: 'Treatment', color: 'var(--health)' },
+      { label: 'Serotonin', type: 'Neurotransmitter', color: 'var(--legal)' },
+      { label: 'SSRI', type: 'Drug Class', color: 'var(--finance)' },
+    ],
+    triplets: [
+      { s: 'MDD', p: 'treated_by', o: 'CBT', color: 'var(--mental)' },
+      { s: 'SSRI', p: 'targets', o: 'Serotonin Reuptake', color: 'var(--health)' },
+    ]
+  }
+};
+
+let currentDomain = 'finance';
+let currentMode = 'graph';
+let messages = [];
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+}
+
+function openConsult(domain) {
+  currentDomain = domain;
+  messages = [];
+  const d = DOMAINS[domain];
+
+  // Session title
+  document.getElementById('chat-session-title').textContent = d.name + ' — New Session';
+
+  // Sidebar domain badge
+  document.getElementById('sidebar-domain').innerHTML = `
+    <div class="sidebar-domain">
+      <div class="sidebar-icon" style="background:${d.bg};border:1px solid ${d.color}33">${d.icon}</div>
+      <div>
+        <div class="sidebar-domain-name">${d.name}</div>
+        <div class="sidebar-domain-sub">${d.tag} domain</div>
+      </div>
+    </div>
+  `;
+
+  // Sources
+  document.getElementById('sidebar-sources').innerHTML = d.sources.map(s => `
+    <div class="source-item">
+      <div class="source-icon" style="background:${d.bg}">${s.icon}</div>
+      <span class="source-name">${s.name}</span>
+      <span class="source-count">${s.count}</span>
+    </div>
+  `).join('');
+
+  // Context graph
+  document.getElementById('cg-nodes').innerHTML = d.graphNodes.map(n => `
+    <div class="cg-node">
+      <span class="cg-node-circle" style="background:${n.color}"></span>
+      <span class="cg-node-label">${n.label}</span>
+      <span class="cg-node-type">${n.type}</span>
+    </div>
+  `).join('');
+
+  // Clear messages and show greeting
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = '';
+
+  const greetHtml = `
+    <div class="msg assistant animate-in">
+      <div class="msg-meta">
+        <div class="msg-avatar">DC</div>
+        <span class="msg-sender">DeepChain · ${d.tag}</span>
+      </div>
+      <div class="msg-bubble">
+        <p style="white-space:pre-line;margin-bottom:16px">${d.greeting}</p>
+        <div class="suggested-queries">
+          ${d.suggestions.map(s => `<button class="sq-btn" onclick="prefillQuery('${s.replace(/'/g,"\\'")}')">→ ${s}</button>`).join('')}
+        </div>
+        <div class="graph-snippet">
+          <div class="graph-header">
+            <span>sample graph triplets · neo4j subgraph</span>
+            <span style="color:${d.color}">${d.tag.toLowerCase()}_graph</span>
+          </div>
+          <div class="graph-body">
+            ${d.triplets.map(t => `
+              <div class="graph-triplet">
+                <span class="triplet-node" style="color:${t.color};border-color:${t.color}44;background:${t.color}11">${t.s}</span>
+                <span class="triplet-edge">─[<span style="color:${t.color}">${t.p}</span>]→</span>
+                <span class="triplet-node" style="color:var(--muted);border-color:var(--border);background:var(--bg3)">${t.o}</span>
+                <span class="conf-score">conf: 0.${Math.floor(Math.random()*15)+82}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  container.innerHTML = greetHtml;
+
+  showPage('consult');
+}
+
+function prefillQuery(text) {
+  const input = document.getElementById('msg-input');
+  input.value = text;
+  autoResize(input);
+  input.focus();
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function toggleMode() {
+  currentMode = currentMode === 'graph' ? 'vector' : 'graph';
+  document.getElementById('mode-toggle').textContent = 'mode: ' + (currentMode === 'graph' ? 'GraphRAG' : 'Naive RAG');
+  if (currentMode === 'graph') {
+    document.getElementById('graph-toggle').classList.add('active');
+    document.getElementById('vec-toggle').classList.remove('active');
+  } else {
+    document.getElementById('vec-toggle').classList.add('active');
+    document.getElementById('graph-toggle').classList.remove('active');
+  }
+}
+
+function toggleGraphMode() {
+  currentMode = 'graph';
+  document.getElementById('graph-toggle').classList.add('active');
+  document.getElementById('vec-toggle').classList.remove('active');
+  document.getElementById('mode-toggle').textContent = 'mode: GraphRAG';
+}
+
+function toggleVecMode() {
+  currentMode = 'vector';
+  document.getElementById('vec-toggle').classList.add('active');
+  document.getElementById('graph-toggle').classList.remove('active');
+  document.getElementById('mode-toggle').textContent = 'mode: Naive RAG';
+}
+
+function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const d = DOMAINS[currentDomain];
+  const container = document.getElementById('chat-messages');
+
+  // User message
+  const userDiv = document.createElement('div');
+  userDiv.className = 'msg user animate-in';
+  userDiv.innerHTML = `
+    <div class="msg-meta" style="justify-content:flex-end">
+      <span class="msg-sender">You</span>
+      <div class="msg-avatar">U</div>
+    </div>
+    <div class="msg-bubble">${text}</div>
+  `;
+  container.appendChild(userDiv);
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Typing indicator
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'msg assistant animate-in';
+  typingDiv.id = 'typing';
+  typingDiv.innerHTML = `
+    <div class="msg-meta">
+      <div class="msg-avatar">DC</div>
+      <span class="msg-sender">DeepChain · ${currentMode === 'graph' ? 'GraphRAG' : 'Naive RAG'}</span>
+    </div>
+    <div class="msg-bubble">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+  `;
+  container.appendChild(typingDiv);
+  container.scrollTop = container.scrollHeight;
+
+  // Update right panel metrics (simulated)
+  updateMetrics(d);
+
+  setTimeout(() => {
+    typingDiv.remove();
+    const response = generateResponse(text, d, currentMode);
+    const responseDiv = document.createElement('div');
+    responseDiv.className = 'msg assistant animate-in';
+    responseDiv.innerHTML = response;
+    container.appendChild(responseDiv);
+    container.scrollTop = container.scrollHeight;
+  }, 1400 + Math.random() * 600);
+}
+
+function updateMetrics(d) {
+  const faith = (0.78 + Math.random() * 0.18).toFixed(2);
+  const prec = (0.71 + Math.random() * 0.2).toFixed(2);
+  const recall = (0.74 + Math.random() * 0.18).toFixed(2);
+  const nodes = Math.floor(12 + Math.random() * 24);
+  const chunks = Math.floor(4 + Math.random() * 10);
+
+  document.getElementById('retrieval-metrics').innerHTML = `
+    <div class="metric-row"><span class="metric-key">Faithfulness</span><span class="metric-val" style="color:var(--health)">${faith}</span></div>
+    <div class="metric-row"><span class="metric-key">Context precision</span><span class="metric-val" style="color:var(--health)">${prec}</span></div>
+    <div class="metric-row"><span class="metric-key">Answer recall</span><span class="metric-val" style="color:var(--health)">${recall}</span></div>
+    <div class="metric-row"><span class="metric-key">Graph nodes hit</span><span class="metric-val" style="color:var(--finance)">${nodes}</span></div>
+    <div class="metric-row"><span class="metric-key">Vec chunks used</span><span class="metric-val" style="color:var(--finance)">${chunks}</span></div>
+  `;
+
+  document.getElementById('relevance-bars').innerHTML = d.sources.map((s, i) => {
+    const score = (0.45 + Math.random() * 0.5).toFixed(2);
+    return `
+      <div class="relevance-bar" style="margin-bottom:10px">
+        <div class="relevance-bar-label">
+          <span>${s.icon} ${s.name}</span>
+          <span>${score}</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${score*100}%;background:${d.color}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('cg-nodes').innerHTML = d.graphNodes.map(n => `
+    <div class="cg-node">
+      <span class="cg-node-circle" style="background:${n.color}"></span>
+      <span class="cg-node-label">${n.label}</span>
+      <span class="cg-node-type">${n.type}</span>
+    </div>
+  `).join('');
+}
+
+function generateResponse(query, d, mode) {
+  const modeBadge = mode === 'graph'
+    ? `<span style="color:var(--health);font-size:10px;font-family:var(--mono)">GraphRAG</span>`
+    : `<span style="color:var(--legal);font-size:10px;font-family:var(--mono)">Naive RAG (Vector)</span>`;
+
+  const sampleResponses = {
+    finance: `Based on the retrieved graph context and document chunks, here's what I found:\n\nThe knowledge graph traversal identified ${Math.floor(12+Math.random()*18)} entity relationships relevant to your query. Fusing these structural facts with semantic vector chunks from Weaviate yielded a grounded, multi-source answer.\n\nThe graph path shows direct connections between the queried entities, with supporting evidence from SEC filings and earnings transcripts. The hybrid retrieval significantly outperforms naive vector search here — the graph layer surfaces relationships that don't appear explicitly in any single document.`,
+    health: `Based on biomedical literature and the drug-disease knowledge graph, here's what the evidence shows:\n\nThe retrieval pipeline traversed ${Math.floor(8+Math.random()*20)} graph hops across the biomedical knowledge graph, connecting drugs, pathways, and clinical outcomes. The vector layer retrieved ${Math.floor(4+Math.random()*8)} high-relevance PubMed chunks.\n\nThe GraphRAG approach is particularly valuable here — drug interaction networks have complex multi-hop dependencies that simple keyword or vector retrieval consistently misses.`,
+    legal: `Based on precedent chain traversal and statutory cross-reference analysis:\n\nThe legal knowledge graph identified a ${Math.floor(3+Math.random()*6)}-hop precedent chain relevant to your query, with key cases establishing or distinguishing the applicable doctrine. The vector layer retrieved supporting contract language and secondary sources.\n\nNote: DeepChain surfaces source citations — always verify with authoritative legal databases before relying on this for formal proceedings.`,
+    mental: `Based on DSM-5 criteria mapping and clinical literature retrieval:\n\nThe comorbidity graph traversal identified ${Math.floor(5+Math.random()*12)} related diagnostic entities, while the vector search retrieved supporting evidence from PsycINFO and clinical guidelines. The hybrid approach surfaces both diagnostic criteria (structured) and treatment evidence (semantic) in a single pass.\n\nThis information is for professional reference only and should not replace clinical judgment.`
+  };
+
+  const body = sampleResponses[currentDomain];
+
+  const citations = d.sources.slice(0, 3).map((s, i) => `
+    <div class="citation">
+      <span class="citation-icon">${s.icon}</span>
+      ${s.name} · chunk ${Math.floor(Math.random()*200+1)}
+    </div>
+  `).join('');
+
+  const tripletHtml = mode === 'graph' ? `
+    <div class="graph-snippet">
+      <div class="graph-header">
+        <span>retrieved graph context · neo4j subgraph</span>
+        ${modeBadge}
+      </div>
+      <div class="graph-body">
+        ${d.triplets.map(t => `
+          <div class="graph-triplet">
+            <span class="triplet-node" style="color:${t.color};border-color:${t.color}44;background:${t.color}11">${t.s}</span>
+            <span class="triplet-edge">─[<span style="color:${t.color}">${t.p}</span>]→</span>
+            <span class="triplet-node" style="color:var(--muted);border-color:var(--border);background:var(--bg3)">${t.o}</span>
+            <span class="conf-score">conf: 0.${Math.floor(Math.random()*15)+82}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  return `
+    <div class="msg-meta">
+      <div class="msg-avatar">DC</div>
+      <span class="msg-sender">DeepChain · ${currentMode === 'graph' ? 'GraphRAG' : 'Naive RAG'}</span>
+    </div>
+    <div class="msg-bubble">
+      <p style="white-space:pre-line;margin-bottom:16px">${body}</p>
+      ${tripletHtml}
+      <div class="citation-strip">${citations}</div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

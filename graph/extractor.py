@@ -40,7 +40,7 @@ Text:
 
 
 class TripletExtractor:
-    def __init__(self, llm: ChatGoogleGenerativeAI | None = None, model_name: str = "gemini-2.5-flash") -> None:
+    def __init__(self, llm: ChatGoogleGenerativeAI | None = None, model_name: str = "gemini-flash-latest") -> None:
         self.llm = llm or ChatGoogleGenerativeAI(model=model_name)
 
     # ── Public API ────────────────────────────────────────────────────────────

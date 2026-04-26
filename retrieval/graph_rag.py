@@ -217,7 +217,7 @@ class GraphRAG:
         self,
         retriever: VectorRetriever,
         neo4j_client: Neo4jClient,
-        model_name: str = "gemini-2.5-flash",
+        model_name: str = "gemini-flash-latest",
         graph_depth: int = 2,
         graph_limit: int = 30,
     ):

@@ -412,7 +412,7 @@ class HybridRetriever:
         self,
         retriever: VectorRetriever,
         neo4j_client: Neo4jClient,
-        model_name: str = "gemini-2.5-flash",
+        model_name: str = "gemini-flash-latest",
         top_k: int = 5,
         graph_depth: int = 2,
         use_reranking: bool = True,

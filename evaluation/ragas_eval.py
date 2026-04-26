@@ -221,7 +221,7 @@ class RagasEvaluator:
 
     def __init__(
         self,
-        model_name: str = "gemini-2.5-flash",
+        model_name: str = "gemini-flash-latest",
         embedding_model: str = "models/gemini-embedding-001",
         thresholds: dict[str, float] | None = None,
         raise_on_regression: bool = False,

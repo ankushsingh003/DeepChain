@@ -27,18 +27,6 @@
 #     description: str = Field(description="Context of the relationship")
 
 # class KnowledgeGraph(BaseModel):
-#     entities: List[Entity] = Field(description="List of all extracted entities")
-#     relationships: List[Relationship] = Field(description="List of all extracted relationships")
-
-# # --- Extractor Implementation ---
-
-# class GraphExtractor:
-#     def __init__(self, model_name: str = "gemini-1.5-flash"):
-#         self.llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
-#         self.parser = PydanticOutputParser(pydantic_object=KnowledgeGraph)
-        
-#         self.prompt = ChatPromptTemplate.from_template(
-#             "Extract entities and their relationships from the following text to build a knowledge graph.\n"
 #             "Focus specifically on facts relevant to business, finance, and legal domains.\n"
 #             "{format_instructions}\n"
 #             "Text: {text}\n"
@@ -141,7 +129,7 @@ class KnowledgeGraph(BaseModel):
 class GraphExtractor:
     def __init__(
         self,
-        model_name: str = "gemini-2.5-flash",
+        model_name: str = "gemini-flash-latest",
         max_retries: int = 3,
         rate_limit_delay: float = 1.5,   # seconds between LLM calls to respect RPM quota
         retry_base_delay: float = 5.0,    # base seconds for exponential backoff on failure

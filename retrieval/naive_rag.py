@@ -164,7 +164,7 @@ class NaiveRAG:
     def __init__(
         self,
         retriever: VectorRetriever,
-        model_name: str = "gemini-2.5-flash",
+        model_name: str = "gemini-flash-latest",
         use_query_rewriting: bool = True,
         use_cache: bool = True,
         cache_ttl: float = 300.0,

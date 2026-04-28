@@ -42,7 +42,7 @@ if st.sidebar.button("🚀 Trigger Ingestion"):
     with st.spinner("Processing documents..."):
         try:
             res = requests.post(f"{api_url}/ingest")
-            st.sidebar.success(f"Ingested {res.json()['entities_extracted']} entities!")
+            st.sidebar.success(res.json().get('message', 'Ingestion completed!'))
         except Exception as e:
             st.sidebar.error("Ingestion failed.")
 

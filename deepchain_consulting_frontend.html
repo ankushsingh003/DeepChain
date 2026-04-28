@@ -39,6 +39,10 @@
     --serif: 'DM Serif Display', Georgia, serif;
     --sans: 'DM Sans', system-ui, sans-serif;
     --mono: 'DM Mono', monospace;
+
+    /* MODAL */
+    --modal-bg: rgba(10,10,15,0.95);
+    --modal-overlay: rgba(0,0,0,0.85);
   }
 
   body {
@@ -902,6 +906,124 @@
   .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
   @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+  /* MODAL STYLES */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--modal-overlay);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .modal-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  .modal-content {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 24px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+  }
+
+  .modal-overlay.active .modal-content {
+    transform: translateY(0);
+  }
+
+  .modal-title {
+    font-family: var(--serif);
+    font-size: 28px;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .modal-desc {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .modal-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .modal-opt-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+
+  .modal-opt-btn:hover {
+    border-color: var(--finance);
+    background: var(--finance-bg);
+    transform: scale(1.02);
+  }
+
+  .opt-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .opt-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .opt-desc {
+    font-size: 12px;
+    color: var(--dim);
+  }
+
+  .opt-arrow {
+    color: var(--dim);
+    transition: transform 0.2s;
+  }
+
+  .modal-opt-btn:hover .opt-arrow {
+    color: var(--finance);
+    transform: translateX(4px);
+  }
+
+  .modal-close {
+    margin-top: 24px;
+    background: none;
+    border: none;
+    color: var(--dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .modal-close:hover {
+    color: var(--text);
+  }
 </style>
 </head>
 <body>
@@ -1250,6 +1372,34 @@
     </div>
   </div>
 
+  <!-- MODAL FOR FINANCE PIPELINE SELECTION -->
+  <div id="finance-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-title">Select Pipeline Entry</div>
+      <p class="modal-desc">Choose the retrieval engine for your financial consultation. You can switch to the experimental pipeline for enhanced relationship mapping.</p>
+      
+      <div class="modal-options">
+        <button class="modal-opt-btn" onclick="confirmPipeline('existing')">
+          <div class="opt-info">
+            <span class="opt-title">Existing Finance Pipeline</span>
+            <span class="opt-desc">Production-grade GraphRAG + Vector fusion</span>
+          </div>
+          <svg class="opt-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 12l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+
+        <button class="modal-opt-btn" onclick="confirmPipeline('new')">
+          <div class="opt-info">
+            <span class="opt-title">New Experimental Pipeline</span>
+            <span class="opt-desc">DeepChain v2 (Alpha) — Enhanced extraction</span>
+          </div>
+          <svg class="opt-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 12l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <button class="modal-close" onclick="closeModal()">Dismiss</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -1386,12 +1536,40 @@ function showPage(name) {
 }
 
 function openConsult(domain) {
+  if (domain === 'finance') {
+    document.getElementById('finance-modal').classList.add('active');
+    return;
+  }
+  proceedToConsult(domain);
+}
+
+function closeModal() {
+  document.getElementById('finance-modal').classList.remove('active');
+}
+
+function confirmPipeline(type) {
+  closeModal();
+  if (type === 'new') {
+    // For now, we'll just flag it and proceed, maybe change the UI a bit
+    console.log("[Pipeline] Entering New Experimental Pipeline");
+    proceedToConsult('finance', true);
+  } else {
+    proceedToConsult('finance', false);
+  }
+}
+
+function proceedToConsult(domain, isNewPipeline = false) {
   currentDomain = domain;
   messages = [];
-  const d = DOMAINS[domain];
+  const d = JSON.parse(JSON.stringify(DOMAINS[domain])); // Clone to modify if needed
+
+  if (isNewPipeline) {
+    d.name = "DeepChain v2 — Financial Intelligence";
+    d.greeting = `Welcome to the **New Experimental Pipeline (v2 Alpha)**.\n\nThis engine uses a redesigned extraction layer for even more precise relationship mapping. You are currently testing our newly built pipeline entry for the finance sector.\n\nHow can I help you today?`;
+  }
 
   // Session title
-  document.getElementById('chat-session-title').textContent = d.name + ' — New Session';
+  document.getElementById('chat-session-title').textContent = d.name + (isNewPipeline ? '' : ' — New Session');
 
   // Sidebar domain badge
   document.getElementById('sidebar-domain').innerHTML = `

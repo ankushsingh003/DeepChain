@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class PortfolioExplainer:
-    def __init__(self, model: str = "gemini-1.5-flash-latest"):
+    def __init__(self, model: str = "gemini-2.0-flash"):
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             logger.error("GOOGLE_API_KEY not found in environment.")

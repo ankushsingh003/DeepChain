@@ -3,10 +3,42 @@ import pandas as pd
 from datetime import datetime, timedelta
 import logging
 import json
+import os
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# --- Cache Config ---
+CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sector_data_cache.json')
+CACHE_TTL_SECONDS = 3600  # 1 hour
+
+def _load_cache():
+    """Load cached sector data if it exists and is still fresh."""
+    try:
+        if not os.path.exists(CACHE_FILE):
+            return None
+        with open(CACHE_FILE, 'r') as f:
+            cached = json.load(f)
+        age = time.time() - cached.get('_timestamp', 0)
+        if age < CACHE_TTL_SECONDS:
+            logger.info(f"[Cache] Using cached sector data (age={int(age)}s, TTL={CACHE_TTL_SECONDS}s)")
+            return cached.get('data')
+        logger.info(f"[Cache] Cache expired (age={int(age)}s). Fetching fresh data...")
+        return None
+    except Exception as e:
+        logger.warning(f"[Cache] Could not read cache: {e}")
+        return None
+
+def _save_cache(data):
+    """Save sector data to cache file with current timestamp."""
+    try:
+        with open(CACHE_FILE, 'w') as f:
+            json.dump({'_timestamp': time.time(), 'data': data}, f)
+        logger.info(f"[Cache] Sector data saved to cache.")
+    except Exception as e:
+        logger.warning(f"[Cache] Could not write cache: {e}")
 
 SECTOR_MAP = {
     "Nifty IT": {"symbol": "^CNXIT", "top_stocks": ["TCS.NS", "INFY.NS", "WIPRO.NS"]},
@@ -41,10 +73,18 @@ def get_proxy_pe_div(stocks):
     avg_div = sum(divs) / len(divs) if divs else 0.0
     return round(avg_pe, 2), round(avg_div, 2)
 
-def fetch_sector_data():
+def fetch_sector_data(force_refresh: bool = False):
     """
     Fetches real-time and historical data for Indian market sectors.
+    Results are cached locally for 1 hour to avoid slow repeated API calls.
+    Pass force_refresh=True to bypass cache.
     """
+    # --- Cache Check ---
+    if not force_refresh:
+        cached = _load_cache()
+        if cached:
+            return cached
+
     results = {}
     
     for sector_name, config in SECTOR_MAP.items():
@@ -103,6 +143,12 @@ def fetch_sector_data():
         except Exception as e:
             logger.error(f"Error fetching {sector_name}: {e}")
             
+    # --- Save to cache ---
+    if results:
+        _save_cache(results)
+    else:
+        logger.warning("[Cache] No results fetched — cache not updated.")
+
     return results
 
 if __name__ == "__main__":

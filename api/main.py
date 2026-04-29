@@ -17,15 +17,7 @@ print("[*] DeepChain API Starting...")
 app = FastAPI(title="DeepChain Hybrid RAG API")
 print("[+] FastAPI App Initialized")
 
-# --- Monitoring (deferred to startup event — never blocks server init) ---
-@app.on_event("startup")
-async def setup_prometheus():
-    try:
-        from prometheus_fastapi_instrumentator import Instrumentator
-        Instrumentator().instrument(app).expose(app)
-        print("[+] Prometheus loaded.")
-    except Exception as e:
-        print(f"[!] Prometheus skipped: {e}")
+# --- Monitoring disabled locally (prometheus causes startup hang) ---
 
 # --- CORS Configuration ---
 app.add_middleware(

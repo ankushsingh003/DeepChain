@@ -32,6 +32,7 @@ class PortfolioStrategy:
         allocations = self._allocate_sectors(market_data, surplus_data, risk_profile)
         
         return {
+            "status": "CRITICAL" if not health_status["is_healthy"] else "OK",
             "health_status": health_status,
             "surplus_data": surplus_data,
             "risk_profile": risk_profile,

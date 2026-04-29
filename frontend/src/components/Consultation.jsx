@@ -5,7 +5,7 @@ import {
   Info, Database, Share2, Sparkles, Network,
   BarChart2, FileText, ChevronRight, Activity,
   RefreshCw, CheckCircle2, Circle, PieChart, TrendingUp,
-  ShieldCheck, Wallet, Briefcase, Calculator
+  ShieldCheck, Wallet, Briefcase, Calculator, Heart
 } from 'lucide-react'
 import { queryRAG, triggerIngestion, getPortfolioStrategy, runTradeTest } from '../services/api'
 
@@ -281,7 +281,7 @@ const Consultation = ({ domain, onBack }) => {
         </header>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 flex flex-col gap-6 custom-scrollbar">
-          {viewMode === 'chat' ? (
+          {viewMode === 'chat' && (
             <>
               {messages.map((msg, i) => (
                 <motion.div 
@@ -341,14 +341,16 @@ const Consultation = ({ domain, onBack }) => {
                 </div>
               )}
             </>
-          ) : viewMode === 'portfolio' ? (
-            <div className="max-w-[800px] mx-auto w-full">
+          )}
+
+          {viewMode === 'portfolio' && (
+            <div className="max-w-[800px] mx-auto w-full pb-20">
               <div className="mb-8 border-b border-border pb-6">
                 <h2 className="text-2xl font-serif mb-2">Portfolio Allocation Strategy</h2>
                 <p className="text-sm text-muted">Configure your profile to generate a risk-aware investment strategy.</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-8 mb-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                 <div className="flex flex-col gap-5">
                   <div>
                     <label className="text-[11px] font-mono text-dim uppercase mb-2 block">Personal Info</label>
@@ -510,18 +512,18 @@ const Consultation = ({ domain, onBack }) => {
                   <div className="flex items-center justify-between mb-8">
                     <div>
                       <div className="text-[10px] font-mono text-finance uppercase tracking-widest mb-1">Analysis Complete</div>
-                      <h3 className="text-xl font-medium">Financial Health: <span className={portfolioData.status === 'CRITICAL' ? 'text-health' : 'text-finance'}>{portfolioData.status}</span></h3>
+                      <h3 className="text-xl font-medium">Financial Health: <span className={portfolioData.status === 'CRITICAL' ? 'text-health' : 'text-finance'}>{portfolioData.status || 'ANALYZING'}</span></h3>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-finance/10 flex items-center justify-center text-finance border border-finance/20">
                       <PieChart size={24} />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-8 mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                     <div className="p-6 rounded-2xl border border-border bg-bg/50">
                       <h4 className="text-[11px] font-mono text-dim uppercase mb-4">Recommended Allocations</h4>
                       <div className="flex flex-col gap-4">
-                        {Object.entries(portfolioData.allocations).map(([sector, percent], i) => (
+                        {portfolioData.allocations && Object.entries(portfolioData.allocations).map(([sector, percent], i) => (
                           <div key={i}>
                             <div className="flex justify-between text-xs mb-1.5">
                               <span>{sector}</span>
@@ -536,10 +538,10 @@ const Consultation = ({ domain, onBack }) => {
                     </div>
                     <div className="p-6 rounded-2xl border border-border bg-bg/50">
                       <h4 className="text-[11px] font-mono text-dim uppercase mb-4">Risk Profile</h4>
-                      <div className="text-3xl font-serif mb-2">{portfolioData.risk_profile}</div>
+                      <div className="text-3xl font-serif mb-2">{portfolioData.risk_profile || 'Moderate'}</div>
                       <p className="text-[12px] text-muted leading-relaxed">
-                        Based on your age ({profileForm.age}) and surplus income of ₹{portfolioData.surplus_income}, 
-                        the engine has calibrated a {portfolioData.risk_profile.toLowerCase()} strategy for your {profileForm.investment_horizon} horizon.
+                        Based on your age ({profileForm.age}) and surplus income of ₹{portfolioData.surplus_income || 0}, 
+                        the engine has calibrated a {(portfolioData.risk_profile || 'Moderate').toLowerCase()} strategy for your {profileForm.investment_horizon} horizon.
                       </p>
                     </div>
                   </div>
@@ -550,20 +552,22 @@ const Consultation = ({ domain, onBack }) => {
                       <span className="text-[11px] font-mono uppercase tracking-wider">AI Strategic Insights</span>
                     </div>
                     <p className="text-sm text-text leading-relaxed whitespace-pre-wrap italic">
-                      "{portfolioData.explanation}"
+                      "{portfolioData.explanation || 'No explanation available.'}"
                     </p>
                   </div>
                 </motion.div>
               )}
             </div>
-          ) : (
-            <div className="max-w-[800px] mx-auto w-full">
+          )}
+
+          {viewMode === 'tradetest' && (
+            <div className="max-w-[800px] mx-auto w-full pb-20">
                <div className="mb-8 border-b border-border pb-6">
                 <h2 className="text-2xl font-serif mb-2">Trade Simulator & Backtester</h2>
                 <p className="text-sm text-muted">Validate trading strategies against historical NSE market data.</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 mb-10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
                 <div className="p-4 rounded-xl border border-border bg-bg2">
                   <label className="text-[10px] font-mono text-dim uppercase mb-2 block">Ticker Symbol</label>
                   <input 
@@ -622,19 +626,19 @@ const Consultation = ({ domain, onBack }) => {
                       </div>
                       <div>
                         <div className="text-[10px] font-mono text-dim uppercase tracking-wider">Strategy Score</div>
-                        <div className="text-2xl font-serif">{tradeTestData.evaluation.score}/100 — {tradeTestData.evaluation.grade}</div>
+                        <div className="text-2xl font-serif">{tradeTestData.evaluation?.score || 0}/100 — {tradeTestData.evaluation?.grade || 'N/A'}</div>
                       </div>
                     </div>
-                    <div className={`px-4 py-2 rounded-full border ${tradeTestData.results.total_return >= 0 ? 'border-finance/30 bg-finance/5 text-finance' : 'border-health/30 bg-health/5 text-health'} font-mono text-sm`}>
-                      {tradeTestData.results.total_return > 0 ? '+' : ''}{tradeTestData.results.total_return.toFixed(2)}% Return
+                    <div className={`px-4 py-2 rounded-full border ${tradeTestData.results?.total_return >= 0 ? 'border-finance/30 bg-finance/5 text-finance' : 'border-health/30 bg-health/5 text-health'} font-mono text-sm`}>
+                      {tradeTestData.results?.total_return > 0 ? '+' : ''}{tradeTestData.results?.total_return?.toFixed(2)}% Return
                     </div>
                   </div>
 
                   {[
-                    { label: 'Win Rate', value: `${(tradeTestData.results.win_rate * 100).toFixed(1)}%`, icon: <CheckCircle2 size={14}/> },
-                    { label: 'Sharpe Ratio', value: tradeTestData.results.sharpe_ratio.toFixed(2), icon: <Activity size={14}/> },
-                    { label: 'Max Drawdown', value: `${(tradeTestData.results.max_drawdown * 100).toFixed(1)}%`, icon: <ShieldCheck size={14}/> },
-                    { label: 'Total Trades', value: tradeTestData.results.total_trades, icon: <Briefcase size={14}/> }
+                    { label: 'Win Rate', value: `${((tradeTestData.results?.win_rate || 0) * 100).toFixed(1)}%`, icon: <CheckCircle2 size={14}/> },
+                    { label: 'Sharpe Ratio', value: (tradeTestData.results?.sharpe_ratio || 0).toFixed(2), icon: <Activity size={14}/> },
+                    { label: 'Max Drawdown', value: `${((tradeTestData.results?.max_drawdown || 0) * 100).toFixed(1)}%`, icon: <ShieldCheck size={14}/> },
+                    { label: 'Total Trades', value: tradeTestData.results?.total_trades || 0, icon: <Briefcase size={14}/> }
                   ].map((stat, i) => (
                     <div key={i} className="p-4 rounded-2xl border border-border bg-bg2">
                       <div className="flex items-center gap-2 text-dim mb-2">
@@ -651,7 +655,7 @@ const Consultation = ({ domain, onBack }) => {
                       ML Evaluator Insight
                     </h4>
                     <p className="text-sm text-text leading-relaxed">
-                      {tradeTestData.evaluation.recommendation}
+                      {tradeTestData.evaluation?.recommendation || 'No recommendation available.'}
                     </p>
                   </div>
                 </motion.div>

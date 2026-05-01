@@ -107,6 +107,9 @@ class TradeTestRequest(BaseModel):
 class StrategyAdvisorRequest(BaseModel):
     intent: str
 
+class MarketAdvisorRequest(BaseModel):
+    symbol: str
+
 # --- Routes ---
 
 @app.get("/health")
@@ -211,6 +214,19 @@ async def get_strategy_advice(request: StrategyAdvisorRequest):
         import traceback
         print(f"[!] Strategy Advisor API Error: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Strategy generation failed: {str(e)}")
+
+@app.post("/finance/market-advisor")
+async def get_market_strategy_advice(request: MarketAdvisorRequest):
+    """Generates a dynamic strategy based on live market conditions."""
+    try:
+        from finance.strategies.market_strategist import MarketStrategyAdvisor
+        advisor = MarketStrategyAdvisor()
+        result = await advisor.analyze_and_build(request.symbol)
+        return result
+    except Exception as e:
+        import traceback
+        print(f"[!] Market Advisor API Error: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Market strategy generation failed: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

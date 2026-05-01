@@ -7,7 +7,7 @@ import {
   RefreshCw, CheckCircle2, Circle, PieChart, TrendingUp,
   ShieldCheck, Wallet, Briefcase, Calculator, Heart
 } from 'lucide-react'
-import { queryRAG, triggerIngestion, getPortfolioStrategy, runTradeTest, getStrategyAdvice } from '../services/api'
+import { queryRAG, triggerIngestion, getPortfolioStrategy, runTradeTest, getStrategyAdvice, getMarketStrategyAdvice } from '../services/api'
 
 const Consultation = ({ domain, onBack }) => {
   const [messages, setMessages] = useState([
@@ -32,6 +32,7 @@ const Consultation = ({ domain, onBack }) => {
   const [portfolioData, setPortfolioData] = useState(null)
   const [tradeTestData, setTradeTestData] = useState(null)
   const [strategyAdvice, setStrategyAdvice] = useState(null)
+  const [marketSymbol, setMarketSymbol] = useState('TSLA')
   const [financeLoading, setFinanceLoading] = useState(false)
   const [profileForm, setProfileForm] = useState({
     age: 30,
@@ -146,6 +147,22 @@ const Consultation = ({ domain, onBack }) => {
       setStrategyAdvice(data)
     } catch (err) {
       alert('Strategy generation failed. Check API status.')
+    } finally {
+      setFinanceLoading(false)
+    }
+  }
+
+  const handleMarketAnalysisRun = async () => {
+    if (!marketSymbol.trim()) return
+    setFinanceLoading(true)
+    try {
+      const data = await getMarketStrategyAdvice(marketSymbol)
+      setStrategyAdvice({
+        approach_report: data.dynamic_report,
+        retrieved_context: data.retrieved_context
+      })
+    } catch (err) {
+      alert('Market analysis failed. Check API status.')
     } finally {
       setFinanceLoading(false)
     }
@@ -723,6 +740,30 @@ const Consultation = ({ domain, onBack }) => {
                     >
                       {financeLoading ? <RefreshCw size={18} className="animate-spin" /> : <Sparkles size={18} />}
                       Build Strategy Approach
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-3xl border border-border bg-bg3 flex items-center justify-between gap-6">
+                  <div className="flex-1">
+                    <h4 className="text-[11px] font-mono text-dim uppercase mb-2">Dynamic Market Analysis</h4>
+                    <p className="text-[12px] text-muted">Generate a strategy based on current LIVE OHLC conditions for a ticker.</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="text"
+                      value={marketSymbol}
+                      onChange={(e) => setMarketSymbol(e.target.value.toUpperCase())}
+                      placeholder="TICKER"
+                      className="w-24 bg-bg border border-border rounded-xl px-4 py-3 text-sm font-mono focus:border-finance outline-none transition-all"
+                    />
+                    <button 
+                      onClick={handleMarketAnalysisRun}
+                      disabled={financeLoading || !marketSymbol.trim()}
+                      className="py-3 px-6 rounded-xl border border-finance text-finance font-medium flex items-center justify-center gap-2 hover:bg-finance/10 active:scale-[0.98] transition-all disabled:opacity-50"
+                    >
+                      {financeLoading ? <RefreshCw size={16} className="animate-spin" /> : <Activity size={16} />}
+                      Analyze Market
                     </button>
                   </div>
                 </div>

@@ -65,3 +65,15 @@ export const getStrategyAdvice = async (intent) => {
     throw error
   }
 }
+
+export const getMarketStrategyAdvice = async (symbol) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/finance/market-advisor`, {
+      symbol
+    })
+    return response.data
+  } catch (error) {
+    console.error('Market Advisor API Error:', error)
+    throw error
+  }
+}

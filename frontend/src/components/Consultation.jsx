@@ -10,11 +10,7 @@ import {
 import { queryRAG, triggerIngestion, getPortfolioStrategy, runTradeTest, getStrategyAdvice, getMarketStrategyAdvice } from '../services/api'
 
 const Consultation = ({ domain, onBack }) => {
-  console.log("DEBUG: Rendering Consultation for domain:", domain?.id);
-  if (!domain) {
-    console.error("ERROR: Consultation rendered with NULL domain!");
-    return null;
-  }
+  if (!domain) return null;
   const [messages, setMessages] = useState([
     { 
       role: 'assistant', 

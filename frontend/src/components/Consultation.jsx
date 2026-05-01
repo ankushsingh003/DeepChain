@@ -10,7 +10,11 @@ import {
 import { queryRAG, triggerIngestion, getPortfolioStrategy, runTradeTest, getStrategyAdvice, getMarketStrategyAdvice } from '../services/api'
 
 const Consultation = ({ domain, onBack }) => {
-  if (!domain) return null;
+  console.log("DEBUG: Rendering Consultation for domain:", domain?.id);
+  if (!domain) {
+    console.error("ERROR: Consultation rendered with NULL domain!");
+    return null;
+  }
   const [messages, setMessages] = useState([
     { 
       role: 'assistant', 
@@ -782,14 +786,16 @@ const Consultation = ({ domain, onBack }) => {
                   
                   <div className="prose prose-invert max-w-none">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-finance/10 flex items-center justify-center text-finance border border-finance/20">
+                      <div className="w-10 h-10 rounded-xl bg-finance-bg flex items-center justify-center text-finance border border-finance/20">
                         <Briefcase size={20} />
                       </div>
                       <h3 className="text-xl font-medium m-0">Strategic Report</h3>
                     </div>
                     
                     <div className="text-[14px] leading-[1.8] text-text whitespace-pre-wrap font-sans">
-                      {strategyAdvice.approach_report}
+                      {typeof strategyAdvice.approach_report === 'string' 
+                        ? strategyAdvice.approach_report 
+                        : JSON.stringify(strategyAdvice.approach_report)}
                     </div>
                   </div>
 

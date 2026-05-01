@@ -155,6 +155,12 @@ const Consultation = ({ domain, onBack }) => {
     <div className="flex h-[calc(100vh-65px)] overflow-hidden bg-bg">
       {/* LEFT SIDEBAR */}
       <aside className="w-[300px] flex-shrink-0 border-r border-border p-8 flex flex-col gap-5 bg-bg2 overflow-y-auto">
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-[10px] font-mono text-muted hover:text-text transition-all uppercase tracking-widest mb-2"
+        >
+          <ArrowLeft size={14} /> Back to Hub
+        </button>
         <div className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-bg3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg text-${domain.color} bg-${domain.id}-bg border border-${domain.id}/20`}>
             {domain.icon}

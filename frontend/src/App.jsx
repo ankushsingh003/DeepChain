@@ -39,12 +39,17 @@ function App() {
           onSelectDomain={startConsultation} 
         />
       )}
-      {view === 'consultation' && (
+      {view === 'consultation' && selectedDomain ? (
         <Consultation 
           domain={selectedDomain} 
           onBack={navigateToDomains} 
         />
-      )}
+      ) : view === 'consultation' ? (
+        <DomainSelection 
+          onBack={navigateToLanding} 
+          onSelectDomain={startConsultation} 
+        />
+      ) : null}
     </div>
   )
 }

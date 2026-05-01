@@ -1,23 +1,23 @@
-from .sma_crossover import sma_crossover
-from .rsi_mean_reversion import rsi_mean_reversion
-from .bollinger_bands import bollinger_bands_breakout
-from .macd_divergence import macd_divergence
-from .z_score_reversion import z_score_reversion
-from .momentum_roc import momentum_roc
-from .parabolic_sar import parabolic_sar_strategy
-from .stochastic_oscillator import stochastic_oscillator
-from .vwap_strategy import vwap_cross
-from .dual_thrust import dual_thrust
+from .trend_following import strategy_trend_following
+from .swing_trading import strategy_swing_trading
+from .mean_reversion_advanced import strategy_mean_reversion_advanced
+from .momentum_breakout import strategy_momentum_breakout
+from .scalping_vwap import strategy_scalping_vwap
+from .pairs_trading import strategy_pairs_trading
+from .carry_trade import strategy_carry_trade
+from .macd_algo import strategy_macd_algo
+from .smart_money_concepts import strategy_smart_money
+from .sector_rotation import strategy_sector_rotation
 
 STRATEGIES = {
-    "SMA_Crossover": sma_crossover,
-    "RSI_Mean_Reversion": rsi_mean_reversion,
-    "Bollinger_Bands": bollinger_bands_breakout,
-    "MACD_Divergence": macd_divergence,
-    "Z_Score_Reversion": z_score_reversion,
-    "Momentum_ROC": momentum_roc,
-    "Parabolic_SAR": parabolic_sar_strategy,
-    "Stochastic_Oscillator": stochastic_oscillator,
-    "VWAP_Cross": vwap_cross,
-    "Dual_Thrust": dual_thrust
+    "Trend_Following": strategy_trend_following,
+    "Swing_Trading": strategy_swing_trading,
+    "Advanced_Mean_Reversion": strategy_mean_reversion_advanced,
+    "Momentum_Breakout": strategy_momentum_breakout,
+    "Scalping_VWAP": strategy_scalping_vwap,
+    "Pairs_Trading": strategy_pairs_trading,
+    "Carry_Trade": strategy_carry_trade,
+    "MACD_Algo": strategy_macd_algo,
+    "Smart_Money_Concepts": strategy_smart_money,
+    "Sector_Rotation": strategy_sector_rotation
 }

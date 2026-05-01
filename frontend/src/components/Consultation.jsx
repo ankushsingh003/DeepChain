@@ -28,6 +28,13 @@ const Consultation = ({ domain, onBack }) => {
   useEffect(() => {
     localStorage.setItem('deepchain_viewmode', viewMode)
   }, [viewMode])
+
+  // RESET viewMode if we switch domains and current view is finance-only
+  useEffect(() => {
+    if (domain.id !== 'finance' && (viewMode === 'strategy_advisor' || viewMode === 'portfolio' || viewMode === 'trade_test')) {
+      setViewMode('chat')
+    }
+  }, [domain.id])
   
   // Finance Pipeline State
   const [portfolioData, setPortfolioData] = useState(null)
@@ -392,7 +399,7 @@ const Consultation = ({ domain, onBack }) => {
             </>
           )}
 
-          {viewMode === 'portfolio' && (
+          {viewMode === 'portfolio' && domain.id === 'finance' && (
             <div className="max-w-[800px] mx-auto w-full pb-20">
               <div className="mb-8 border-b border-border pb-6">
                 <h2 className="text-2xl font-serif mb-2">Portfolio Allocation Strategy</h2>
@@ -614,7 +621,7 @@ const Consultation = ({ domain, onBack }) => {
             </div>
           )}
 
-          {viewMode === 'tradetest' && (
+          {viewMode === 'tradetest' && domain.id === 'finance' && (
             <div className="max-w-[800px] mx-auto w-full pb-20">
                <div className="mb-8 border-b border-border pb-6">
                 <h2 className="text-2xl font-serif mb-2">Trade Simulator & Backtester</h2>
@@ -717,7 +724,7 @@ const Consultation = ({ domain, onBack }) => {
             </div>
           )}
 
-          {viewMode === 'strategy_advisor' && (
+          {viewMode === 'strategy_advisor' && domain.id === 'finance' && (
             <div className="max-w-[800px] mx-auto w-full pb-20">
               <div className="mb-8 border-b border-border pb-6">
                 <h2 className="text-2xl font-serif mb-2">Quant Strategy Advisor</h2>

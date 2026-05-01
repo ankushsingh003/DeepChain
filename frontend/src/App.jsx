@@ -4,10 +4,19 @@ import DomainSelection from './components/DomainSelection'
 import Consultation from './components/Consultation'
 
 function App() {
-  const [view, setView] = useState(() => localStorage.getItem('deepchain_view') || 'landing')
+  const [view, setView] = useState(() => {
+    try {
+      const saved = localStorage.getItem('deepchain_view')
+      if (['landing', 'domains', 'consultation'].includes(saved)) return saved
+    } catch (e) {}
+    return 'landing'
+  })
+
   const [selectedDomain, setSelectedDomain] = useState(() => {
-    const saved = localStorage.getItem('deepchain_domain')
-    return saved ? JSON.parse(saved) : null
+    try {
+      const saved = localStorage.getItem('deepchain_domain')
+      return saved ? JSON.parse(saved) : null
+    } catch (e) { return null }
   })
 
   useEffect(() => {

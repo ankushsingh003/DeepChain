@@ -14,6 +14,14 @@ function App() {
     localStorage.setItem('deepchain_view', view)
   }, [view])
 
+  // VALIDATION: If we are in consultation without a domain, rescue to domains
+  useEffect(() => {
+    if (view === 'consultation' && !selectedDomain) {
+      console.warn("Rescue: No domain found for consultation. Redirecting...")
+      setView('domains')
+    }
+  }, [view, selectedDomain])
+
   useEffect(() => {
     if (selectedDomain) {
       localStorage.setItem('deepchain_domain', JSON.stringify(selectedDomain))

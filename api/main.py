@@ -251,6 +251,84 @@ async def get_market_strategy_advice(request: MarketAdvisorRequest):
         print(f"[!] Market Advisor API Error: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Market strategy generation failed: {str(e)}")
 
+# ── ML Stock Strategy Advisory ─────────────────────────────────────────────────
+
+class MLStockAdvisoryRequest(BaseModel):
+    symbol: str
+
+class MLTrainRequest(BaseModel):
+    quick: bool = False
+
+
+@app.post("/finance/ml-stock-advisory")
+async def ml_stock_advisory(request: MLStockAdvisoryRequest):
+    """
+    Full ML-powered stock advisory:
+    1. Fetches live OHLCV + fundamentals (PE, face value, mkt cap, 52w H/L, etc.)
+    2. Computes 15 technical features
+    3. ML model predicts best strategy + expected Sharpe
+    4. Runs 2-year backtests for all 10 strategies
+    5. If ML and backtest agree, use that strategy; if they disagree, auto-generate a Sharpe-weighted hybrid
+    6. Returns full structured advisory with entry/exit levels
+    """
+    try:
+        from finance.ml_engine.advisor_engine import StockStrategyAdvisor
+        advisor = StockStrategyAdvisor(auto_train_quick=True)
+        result  = advisor.advise(request.symbol)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        print(f"[!] ML Advisory Error: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"ML advisory failed: {str(e)}")
+
+
+@app.post("/finance/ml-train")
+async def trigger_ml_training(request: MLTrainRequest):
+    """
+    Trigger ML model training on Nifty-50 symbols.
+    quick=True: 10 symbols (~5 min). quick=False: 30 symbols (~25 min).
+    """
+    try:
+        from finance.ml_engine.trainer import StrategyMLTrainer
+        trainer = StrategyMLTrainer()
+        result  = trainer.train(quick=request.quick)
+        return {"status": "success", "training_summary": result}
+    except Exception as e:
+        import traceback
+        print(f"[!] ML Training Error: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"ML training failed: {str(e)}")
+
+
+@app.get("/finance/ml-model-status")
+async def ml_model_status():
+    """Check if trained ML models exist and when they were last trained."""
+    from pathlib import Path
+    import json as _json
+    model_dir  = Path("models")
+    log_path   = model_dir / "training_log.json"
+    clf_exists = (model_dir / "strategy_classifier.joblib").exists()
+    reg_exists = (model_dir / "sharpe_regressor.joblib").exists()
+    trained_at = None
+    summary    = {}
+    if log_path.exists():
+        try:
+            with open(log_path) as f:
+                log = _json.load(f)
+            trained_at = log.get("trained_at")
+            summary    = log
+        except Exception:
+            pass
+    return {
+        "models_ready":      clf_exists and reg_exists,
+        "classifier_exists": clf_exists,
+        "regressor_exists":  reg_exists,
+        "trained_at":        trained_at,
+        "training_summary":  summary,
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))

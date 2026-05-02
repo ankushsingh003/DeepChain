@@ -1,89 +1,3 @@
-# """
-# DeepChain-Hybrid-RAG: Enterprise Knowledge Intelligence
-# Module: Weaviate Client - Vector Database Operations
-# """
-
-# import os
-# import weaviate
-# from weaviate.classes.init import Auth
-# from weaviate.classes.config import Property, DataType, Configure
-# from typing import List, Dict, Any
-# from dotenv import load_dotenv
-
-# load_dotenv()
-
-# class WeaviateClient:
-#     def __init__(self):
-#         self.url = os.getenv("WEAVIATE_URL", "http://localhost:8080")
-#         self.grpc_port = 50051 # Default gRPC port for v4
-#         self.client = weaviate.connect_to_local(
-#             host="localhost",
-#             port=8080,
-#             grpc_port=50051
-#         )
-#         self.collection_name = "DocumentChunk"
-#         self.create_schema()
-
-#     def close(self):
-#         self.client.close()
-
-#     def create_schema(self):
-#         """Creates the collection schema if it doesn't exist."""
-#         print(f"[*] Initializing Weaviate Schema: {self.collection_name}...")
-        
-#         if self.client.collections.exists(self.collection_name):
-#             print(f"[!] Collection {self.collection_name} already exists.")
-#             return
-
-#         self.client.collections.create(
-#             name=self.collection_name,
-#             properties=[
-#                 Property(name="content", data_type=DataType.TEXT),
-#                 Property(name="source", data_type=DataType.TEXT),
-#                 Property(name="chunk_id", data_type=DataType.INT),
-#             ],
-#             vectorizer_config=Configure.Vectorizer.none() # We provide embeddings manually
-#         )
-#         print(f"[+] Collection {self.collection_name} created.")
-
-#     def upsert_chunks(self, chunks: List[Dict[str, Any]], vectors: List[List[float]]):
-#         """Batch upserts text chunks and their pre-computed vectors."""
-#         print(f"[*] Vectorizing Phase: Writing {len(chunks)} chunks to Weaviate...")
-        
-#         collection = self.client.collections.get(self.collection_name)
-        
-#         with collection.batch.dynamic() as batch:
-#             for i, chunk in enumerate(chunks):
-#                 batch.add_object(
-#                     properties=chunk,
-#                     vector=vectors[i]
-#                 )
-#         print("[+] Weaviate Population complete.")
-
-#     def search(self, vector: List[float], limit: int = 5):
-#         """Performs a vector search for the given query vector."""
-#         collection = self.client.collections.get(self.collection_name)
-#         response = collection.query.near_vector(
-#             near_vector=vector,
-#             limit=limit,
-#             return_properties=["content", "source", "chunk_id"]
-#         )
-#         return response.objects
-
-# if __name__ == "__main__":
-#     # Test connection
-#     try:
-#         w_client = WeaviateClient()
-#         w_client.create_schema()
-#         print("[SUCCESS] Connected to Weaviate.")
-#         w_client.close()
-#     except Exception as e:
-#         print(f"[ERROR] Weaviate connection failed: {e}")
-
-
-
-
-
 """
 DeepChain-Hybrid-RAG: Enterprise Knowledge Intelligence
 Module: Weaviate Client — Production Grade
@@ -158,17 +72,16 @@ def _make_deterministic_uuid(source: str, chunk_id: Any) -> str:
 # WeaviateClient
 # ---------------------------------------------------------------------------
 
+class WeaviateNotAvailableError(RuntimeError):
+    """Raised when Weaviate cannot be reached at startup."""
+    pass
+
+
 class WeaviateClient:
     """
     Production-grade Weaviate client for DeepChain-Hybrid-RAG.
-
-    Supports:
-        - Local or Weaviate Cloud (WCS) connections
-        - Idempotent upserts via deterministic UUIDs
-        - Tuned HNSW index for large-scale ANN search
-        - Rich metadata schema with filtering support
-        - Multi-tenancy (opt-in)
-        - Batch error tracking + retry
+    Raises WeaviateNotAvailableError (not a raw socket error) when Weaviate
+    is unreachable, so the API layer can return a clean 503 to the frontend.
     """
 
     def __init__(
@@ -190,24 +103,38 @@ class WeaviateClient:
     # Connection
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def is_available() -> bool:
+        """
+        Quick TCP health-check — returns True if Weaviate is reachable.
+        Call this BEFORE constructing WeaviateClient to give a clean error.
+        """
+        import socket
+        host = os.getenv("WEAVIATE_HOST", "localhost")
+        port = int(os.getenv("WEAVIATE_PORT", 8080))
+        try:
+            with socket.create_connection((host, port), timeout=3):
+                return True
+        except OSError:
+            return False
+
     def _connect_with_retry(self, attempts: int = 3, delay: float = 2.0):
-        """Connect to Weaviate (cloud or local) with retry/backoff."""
+        """Connect to Weaviate (cloud or local) with retry/backoff.
+        Raises WeaviateNotAvailableError with a clear message on failure."""
         weaviate_url = os.getenv("WEAVIATE_URL", "")
-        api_key = os.getenv("WEAVIATE_API_KEY", "")
+        api_key      = os.getenv("WEAVIATE_API_KEY", "")
+        host         = os.getenv("WEAVIATE_HOST", "localhost")
+        port         = int(os.getenv("WEAVIATE_PORT", 8080))
 
         for attempt in range(1, attempts + 1):
             try:
                 if weaviate_url and "weaviate.network" in weaviate_url:
-                    # Weaviate Cloud (WCS)
                     logger.info(f"[WeaviateClient] Connecting to WCS: {weaviate_url}")
                     client = weaviate.connect_to_weaviate_cloud(
                         cluster_url=weaviate_url,
                         auth_credentials=Auth.api_key(api_key) if api_key else None,
                     )
                 else:
-                    # Local Weaviate
-                    host = os.getenv("WEAVIATE_HOST", "localhost")
-                    port = int(os.getenv("WEAVIATE_PORT", 8080))
                     grpc_port = int(os.getenv("WEAVIATE_GRPC_PORT", 50051))
                     logger.info(f"[WeaviateClient] Connecting to local Weaviate at {host}:{port}")
                     client = weaviate.connect_to_local(
@@ -222,7 +149,11 @@ class WeaviateClient:
             except Exception as e:
                 if attempt == attempts:
                     logger.error(f"[WeaviateClient] Connection failed after {attempts} attempts: {e}")
-                    raise
+                    raise WeaviateNotAvailableError(
+                        f"Weaviate is not running or not reachable at {host}:{port}. "
+                        f"Start it with: docker run -d -p 8080:8080 -p 50051:50051 "
+                        f"cr.weaviate.io/semitechnologies/weaviate:latest"
+                    ) from e
                 logger.warning(f"[WeaviateClient] Attempt {attempt} failed ({e}). Retrying in {delay}s...")
                 time.sleep(delay)
                 delay *= 2

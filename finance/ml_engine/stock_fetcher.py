@@ -206,9 +206,7 @@ class StockDataFetcher:
         # Stochastic %K
         low14  = low.rolling(14).min()
         high14 = high.rolling(14).max()
-        stoch_k = float(100 * (close - low14) / (high14 - low14 + 1e-9)).iloc[-1] \
-                  if hasattr(((close - low14) / (high14 - low14 + 1e-9)), 'iloc') \
-                  else float(100 * (close.iloc[-1] - low14.iloc[-1]) / (high14.iloc[-1] - low14.iloc[-1] + 1e-9))
+        stoch_k = float((100 * (close - low14) / (high14 - low14 + 1e-9)).iloc[-1])
 
         price = float(close.iloc[-1])
         vol_avg20 = float(volume.rolling(20).mean().iloc[-1])

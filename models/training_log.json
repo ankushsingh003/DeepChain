@@ -1,0 +1,55 @@
+{
+  "status": "success",
+  "samples_trained": 8,
+  "strategies_seen": [
+    "Advanced_Mean_Reversion",
+    "Momentum_Breakout",
+    "Swing_Trading"
+  ],
+  "strategy_distribution": {
+    "Advanced_Mean_Reversion": 5,
+    "Momentum_Breakout": 2,
+    "Swing_Trading": 1
+  },
+  "top_features": [
+    [
+      "rsi",
+      0.15189873417721517
+    ],
+    [
+      "bb_pct",
+      0.11392405063291138
+    ],
+    [
+      "macd_hist",
+      0.10126582278481011
+    ],
+    [
+      "vol_ratio",
+      0.08860759493670885
+    ],
+    [
+      "atr_pct",
+      0.08860759493670885
+    ]
+  ],
+  "models_saved": [
+    "models\\strategy_classifier.joblib",
+    "models\\sharpe_regressor.joblib",
+    "models\\feature_scaler.joblib",
+    "models\\label_map.joblib"
+  ],
+  "trained_at": 1777719372.1564682,
+  "symbols": [
+    "RELIANCE.NS",
+    "TCS.NS",
+    "HDFCBANK.NS",
+    "INFY.NS",
+    "ICICIBANK.NS",
+    "HINDUNILVR.NS",
+    "ITC.NS",
+    "WIPRO.NS",
+    "SUNPHARMA.NS",
+    "TATAMOTORS.NS"
+  ]
+}
